@@ -94,11 +94,11 @@ public final class BackendAIService: AIService {
             text: request.text,
             context: ctx
         )
-        let data = try JSONEncoder().encode(body)
+        let bodyData = try JSONEncoder().encode(body)
         var request = try api.makeRequest(
             path: "/api/\(config.apiVersion)/chat",
             method: "POST",
-            body: data,
+            body: bodyData,
             headers: [:]
         )
         try applyAuth(to: &request)
@@ -169,7 +169,6 @@ public final class BackendAIService: AIService {
             }
         }
 
-        let ctx = request.context
         let text = request.text
         do {
             try await sendEnvelope(type: .sessionStart, requestId: requestId, payload: SessionStartPayload(
@@ -267,7 +266,7 @@ public final class BackendAIService: AIService {
     private func applyAuth(to request: inout URLRequest) throws {
         let token = try auth.bearerToken()
         guard let token, !token.isEmpty else {
-            throw NetworkError.unauthorized("No API key stored. Add your backend key in Settings.")
+            throw NetworkError.unauthorized
         }
         // Token material never leaves this function except into the header.
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")

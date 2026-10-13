@@ -143,7 +143,7 @@ public struct ZyraxisEnvelope: Codable, Equatable, Sendable {
         }
         guard env.version == BackendProtocol.currentVersion else {
             throw BackendProtocolError.versionMismatch(
-                expected: currentVersion,
+                expected: BackendProtocol.currentVersion,
                 received: env.version
             )
         }
