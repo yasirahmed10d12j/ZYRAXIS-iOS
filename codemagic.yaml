@@ -110,10 +110,14 @@ workflows:
           test -f "$APP_INFO" || { echo "Built app Info.plist not found at $APP_INFO"; exit 1; }
           /usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP_INFO" | grep -qx "com.zyraxis.assistant" \
             || { echo "CFBundleIdentifier missing/wrong in built app Info.plist"; exit 1; }
+          # Full built-plist evidence for diagnosing app metadata (executable,
+          # version, display name, usage strings) without gating the build.
+          plutil -p "$APP_INFO" | tee build/logs/built-info-plist.txt
           echo "Release device build check passed (product NOT installable — use ios-release-ipa for a signed IPA)."
     artifacts:
       - build/logs/test.log
       - build/logs/build-device.log
+      - build/logs/built-info-plist.txt
       - build/logs/TestResults.xcresult
       - build/derived/Build/Products/Release-iphoneos/ZYRAXIS-iOS.app
 

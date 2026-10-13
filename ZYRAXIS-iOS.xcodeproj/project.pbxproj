@@ -653,6 +653,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ZYRAXIS/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleIdentifier = $(PRODUCT_BUNDLE_IDENTIFIER);
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -671,6 +672,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ZYRAXIS/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleIdentifier = $(PRODUCT_BUNDLE_IDENTIFIER);
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

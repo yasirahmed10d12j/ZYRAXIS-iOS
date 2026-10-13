@@ -4,9 +4,10 @@
 <dict>
     <key>CFBundleDisplayName</key>
     <string>ZYRAXIS</string>
-    <!-- NOTE: no CFBundleIdentifier here — Xcode generates it from
-         PRODUCT_BUNDLE_IDENTIFIER (Config/Shared.xcconfig target settings).
-         Keep them in one place so the bundle ID stays easy to change. -->
+    <!-- NOTE: no CFBundleIdentifier value here — it is injected at build time
+         from PRODUCT_BUNDLE_IDENTIFIER via the INFOPLIST_KEY_CFBundleIdentifier
+         build setting (see project.pbxproj). Single source of truth: the build
+         setting. A custom Info.plist does NOT get the key synthesized. -->
     <key>CFBundleShortVersionString</key>
     <string>0.5.0</string>
     <key>CFBundleVersion</key>
