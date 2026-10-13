@@ -12,7 +12,8 @@
 #
 # WORKFLOWS:
 #   1. ios-simulator  — no Apple credentials needed. Runs XCTest on a simulator
-#                       and produces an UNSIGNED generic-device archive (build check only,
+#                       plus a Release generic-device BUILD check (compile →
+#                       link → package incl. bundle-ID assertion; NOT an archive,
 #                       NOT a device-installable IPA).
 #   2. ios-release-ipa — SIGNED, device-/store-installable IPA. Requires the Apple
 #                       signing setup described in README § "Codemagic setup".
@@ -24,7 +25,7 @@
 
 workflows:
   ios-simulator:
-    name: iOS Simulator Tests + Unsigned Build
+    name: iOS Simulator Tests + Device Build Check
     instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
@@ -76,29 +77,45 @@ workflows:
             -destination "platform=iOS Simulator,id=$DEVICE_UDID" \
             -resultBundlePath build/logs/TestResults.xcresult \
             2>&1 | tee build/logs/test.log
-      - name: Unsigned Release archive (build check only, NOT an installable IPA)
+      - name: Release device build check (NOT an archive, NOT installable)
         script: |
           #!/bin/sh
           set -e -u
-          mkdir -p build/logs build/unsigned
-          # CODE_SIGNING_ALLOWED=NO proves the device configuration compiles
-          # without any Apple credentials. Output is an unsigned .xcarchive.
-          xcodebuild archive \
+          mkdir -p build/logs
+          # WHY BUILD AND NOT ARCHIVE: Xcode 16.2's `archive` action ends in an
+          # Organizer validation ("Archive Missing Bundle Identifier") that cannot
+          # pass without real Apple signing assets — unsigned AND ad-hoc-signed
+          # archives are both rejected (Codemagic builds #4/#5), even though the
+          # bundle ID (com.zyraxis.assistant) resolves correctly in every build
+          # task. `build` for a generic iOS device runs the same Release
+          # compile → link → package pipeline (including Info.plist bundle-ID
+          # injection) with signing fully disabled, needing no Apple
+          # credentials, team, or provisioning profile.
+          # PROVES: Release device configuration compiles, links, and packages
+          #   ZYRAXIS-iOS.app with the correct injected CFBundleIdentifier
+          #   (asserted below from the built product itself).
+          # DOES NOT PROVE: .xcarchive creation, Organizer validation, device
+          #   installation, or distribution. For an installable IPA use ios-release-ipa.
+          xcodebuild build \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
             -configuration "$XCODE_CONFIGURATION_BUILD" \
-            -archivePath build/unsigned/ZYRAXIS-iOS.xcarchive \
             -destination 'generic/platform=iOS' \
+            -derivedDataPath build/derived \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            2>&1 | tee build/logs/archive-unsigned.log
-          echo "Unsigned archive written to build/unsigned/ZYRAXIS-iOS.xcarchive (not installable on devices)."
+            2>&1 | tee build/logs/build-device.log
+          APP_INFO="build/derived/Build/Products/Release-iphoneos/ZYRAXIS-iOS.app/Info.plist"
+          test -f "$APP_INFO" || { echo "Built app Info.plist not found at $APP_INFO"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP_INFO" | grep -qx "com.zyraxis.assistant" \
+            || { echo "CFBundleIdentifier missing/wrong in built app Info.plist"; exit 1; }
+          echo "Release device build check passed (product NOT installable — use ios-release-ipa for a signed IPA)."
     artifacts:
       - build/logs/test.log
-      - build/logs/archive-unsigned.log
+      - build/logs/build-device.log
       - build/logs/TestResults.xcresult
-      - build/unsigned/ZYRAXIS-iOS.xcarchive
+      - build/derived/Build/Products/Release-iphoneos/ZYRAXIS-iOS.app
 
   ios-release-ipa:
     name: iOS Release IPA (Signed)

@@ -106,7 +106,8 @@ final class ToolRoundTripTests: XCTestCase {
 
     func testRegistryDescriptorsExposeMetadata() async {
         let registry = DefaultToolRegistry()
-        XCTAssertTrue(await registry.descriptors().isEmpty)
+        let descriptorsEmpty = await registry.descriptors().isEmpty
+        XCTAssertTrue(descriptorsEmpty)
         await registry.register(SpyReadTool())
         await registry.register(DangerousTool())
         let descs = await registry.descriptors()

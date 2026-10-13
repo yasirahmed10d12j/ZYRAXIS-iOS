@@ -33,3 +33,6 @@ Desktop.ini
 *.mobileprovision
 *.key
 GoogleService-Info.plist
+
+# Codemagic/local CI outputs (logs, derived data, packaged apps)
+build/

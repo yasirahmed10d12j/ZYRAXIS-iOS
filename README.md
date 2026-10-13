@@ -361,8 +361,10 @@ Do steps in order. Stop and fix at the first failure — do not skip ahead.
 `com.zyraxis.assistant`, iOS 17.0, Xcode 16+):
 
 - `ios-simulator` (push to `main`) — no Apple credentials needed. Runs the
-  17 XCTest suites on an available simulator and produces an **unsigned**
-  Release archive as a compile check. This is NOT an installable IPA.
+  17 XCTest suites on an available simulator plus a Release generic-device
+  build check (compile/link/package with bundle-ID assertion). This is NOT
+  an archive and NOT an installable IPA (Xcode 16.2 archive validation
+  requires real signing assets — see `codemagic.yaml`).
 - `ios-release-ipa` (tag `v*`) — **signed** IPA via automatic signing.
   Requires the setup below; fails fast with a clear message until then.
 

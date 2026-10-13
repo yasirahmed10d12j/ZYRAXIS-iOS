@@ -23,7 +23,9 @@ public final class AssistantStateMachine: ObservableObject {
 
     /// Allowed transitions. Kept intentionally explicit so invalid
     /// voice/AI interleavings are caught in tests and in debug builds.
-    public static func canTransition(from: AssistantState, to: AssistantState) -> Bool {
+    /// Pure function of its arguments (no actor state), so `nonisolated`:
+    /// callable from any context without weakening the transition rules.
+    public nonisolated static func canTransition(from: AssistantState, to: AssistantState) -> Bool {
         if from == to { return true }
         switch from {
         case .idle:

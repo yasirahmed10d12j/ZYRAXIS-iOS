@@ -89,7 +89,8 @@ final class AIProtocolTests: XCTestCase {
         let env = envelope(type: .ping, version: 999)
         guard let text = try? env.encode() else { return XCTFail("encode failed") }
         XCTAssertThrowsError(try ZyraxisEnvelope.decode(text)) { error in
-            guard case BackendProtocolError.versionMismatch(let e, let r) = error as? BackendProtocolError else {
+            guard let protocolError = error as? BackendProtocolError,
+                  case .versionMismatch(let e, let r) = protocolError else {
                 return XCTFail("expected versionMismatch, got \(error)")
             }
             XCTAssertEqual(e, BackendProtocol.currentVersion)
