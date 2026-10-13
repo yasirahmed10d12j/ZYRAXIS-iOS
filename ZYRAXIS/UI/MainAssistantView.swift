@@ -143,7 +143,7 @@ public struct MainAssistantView: View {
             Spacer()
             ConnectionBadge(
                 connectionState: deps.webSocket.state,
-                backendConfigured: deps.settings.backendConfig.isConfigured
+                backendConfigured: providerConnectionConfigured
             )
             Button { showingSettings = true } label: {
                 Image(systemName: "gearshape.fill")
@@ -158,6 +158,32 @@ public struct MainAssistantView: View {
     }
 
     // MARK: - Status
+
+    /// ConnectionBadge "configured" flag per provider: backend and mock keep
+    /// the legacy backend-URL behavior; direct providers are connectionless
+    /// (badge then reflects socket state instead of claiming NO BACKEND).
+    private var providerConnectionConfigured: Bool {
+        switch deps.settings.selectedProvider {
+        case .customBackend, .mock:
+            return deps.settings.backendConfig.isConfigured
+        case .gemini, .groq, .realtimeFuture:
+            return true
+        }
+    }
+
+    /// Whether the selected direct provider has a key in Keychain.
+    private var hasDirectProviderKey: Bool {
+        let key: String
+        switch deps.settings.selectedProvider {
+        case .gemini:
+            key = KeychainKeys.geminiAPIKey
+        case .groq:
+            key = KeychainKeys.groqAPIKey
+        default:
+            return true
+        }
+        return (try? deps.keychain.load(forKey: key))?.isEmpty == false
+    }
 
     private var statusBlock: some View {
         VStack(spacing: 6) {
@@ -183,8 +209,18 @@ public struct MainAssistantView: View {
                         .lineLimit(1)
                 }
             }
-            if deps.settings.backendConfig.isConfigured == false {
-                Text("Backend not configured — set URL in Settings. Mock AI active for UI dev.")
+            if deps.settings.backendConfig.isConfigured == false && deps.settings.selectedProvider == .customBackend {
+                Text("Backend not configured — set URL in Settings.")
+                    .font(ZyraxisTheme.caption())
+                    .foregroundStyle(.white.opacity(0.45))
+                    .multilineTextAlignment(.center)
+            } else if deps.settings.selectedProvider == .mock {
+                Text("Mock AI active for UI dev — select Gemini or Groq in Settings for real AI.")
+                    .font(ZyraxisTheme.caption())
+                    .foregroundStyle(.white.opacity(0.45))
+                    .multilineTextAlignment(.center)
+            } else if (deps.settings.selectedProvider == .gemini || deps.settings.selectedProvider == .groq) && !hasDirectProviderKey {
+                Text("Add your \(deps.settings.selectedProvider.displayName) API key in Settings → AI Backend.")
                     .font(ZyraxisTheme.caption())
                     .foregroundStyle(.white.opacity(0.45))
                     .multilineTextAlignment(.center)

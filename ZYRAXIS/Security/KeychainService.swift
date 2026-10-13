@@ -89,4 +89,6 @@ public struct SystemKeychainService: KeychainService, Sendable {
 public enum KeychainKeys {
     public static let backendAPIKey = "zyraxis.backend.apiKey"
     public static let realtimeToken = "zyraxis.realtime.token"
+    public static let geminiAPIKey = "zyraxis.gemini.apiKey"
+    public static let groqAPIKey = "zyraxis.groq.apiKey"
 }

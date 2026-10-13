@@ -7,8 +7,8 @@ import Combine
 /// concrete types directly — so phases swap implementations without
 /// touching views.
 ///
-/// Phase 2 layering:
-/// UI -> ConversationManager -> AIService (mock | backend) -> ToolRegistry -> API/Backend
+/// Phase 2 layering (Phase 6 adds direct providers):
+/// UI -> ConversationManager -> AIService (mock | backend | gemini | groq) -> ToolRegistry -> API/Backend
 ///          ↳ ContextManager (bounded context) · FastCommandRouter · AssistantStateMachine
 @MainActor
 public final class AppDependencies: ObservableObject {
@@ -28,11 +28,22 @@ public final class AppDependencies: ObservableObject {
 
     private let mockService: any AIService
     private let backendService: BackendAIService
+    private let geminiService: GeminiDirectService
+    private let groqService: GroqDirectService
 
-    /// Resolved per access from settings: mock for UI dev, backend when the
-    /// ZYRAXIS Backend provider is selected.
+    /// Resolved per access from settings: direct providers call Gemini/Groq
+    /// with the user's Keychain key; backend needs its server; else mock.
     public var aiService: any AIService {
-        settings.selectedProvider == .customBackend ? backendService : mockService
+        switch settings.selectedProvider {
+        case .customBackend:
+            return backendService
+        case .gemini:
+            return geminiService
+        case .groq:
+            return groqService
+        case .mock, .realtimeFuture:
+            return mockService
+        }
     }
 
     /// Transcript + activity feed, owned by the conversation engine.
@@ -52,6 +63,8 @@ public final class AppDependencies: ObservableObject {
         webSocket: URLSessionWebSocketManager,
         mockService: any AIService,
         backendService: BackendAIService,
+        geminiService: GeminiDirectService = GeminiDirectService(),
+        groqService: GroqDirectService = GroqDirectService(),
         voiceManager: VoiceManagerImpl,
         memoryService: any MemoryService,
         taskService: any TaskService,
@@ -67,6 +80,8 @@ public final class AppDependencies: ObservableObject {
         self.webSocket = webSocket
         self.mockService = mockService
         self.backendService = backendService
+        self.geminiService = geminiService
+        self.groqService = groqService
         self.voiceManager = voiceManager
         self.memoryService = memoryService
         self.taskService = taskService
@@ -80,7 +95,9 @@ public final class AppDependencies: ObservableObject {
             toolRegistry: toolRegistry,
             contextManager: contextManager,
             mockService: mockService,
-            backendService: backendService
+            backendService: backendService,
+            geminiService: geminiService,
+            groqService: groqService
         )
 
         // Forward nested ObservableObject changes so views observing only
@@ -104,6 +121,14 @@ public final class AppDependencies: ObservableObject {
         let ws = URLSessionWebSocketManager()
         ws.reconnectPolicy = config.reconnectPolicy
         let mock: any AIService = MockAIService(delayNanoseconds: AppConfig.mockAIDelay)
+        let gemini = GeminiDirectService(
+            keychain: keychain,
+            timeout: settings.requestTimeout
+        )
+        let groq = GroqDirectService(
+            keychain: keychain,
+            timeout: settings.requestTimeout
+        )
         let backend = BackendAIService(
             socket: ws,
             api: api,
@@ -130,6 +155,8 @@ public final class AppDependencies: ObservableObject {
             webSocket: ws,
             mockService: mock,
             backendService: backend,
+            geminiService: gemini,
+            groqService: groq,
             voiceManager: voice,
             memoryService: memory,
             taskService: tasks,

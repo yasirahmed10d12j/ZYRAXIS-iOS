@@ -78,6 +78,10 @@
 		3C54C13C1EABBE7F59541519 /* TaskModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EC5949FF7D4E5AC7947A151 /* TaskModelTests.swift */; };
 		09FED6CD68D9D877E74FC777 /* ToolRoundTripTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B954263F73EA917A8C89BDB /* ToolRoundTripTests.swift */; };
 		4D2F1C49F9B8AA058A6C5E46 /* VoiceStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4C79F13A13F732A8B4CB198 /* VoiceStateTests.swift */; };
+		D1EC7B001A2B3C4D5E6F7082 /* DirectProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1EC7B001A2B3C4D5E6F7081 /* DirectProvider.swift */; };
+		6E1A2B3C4D5E6F708192A3B5 /* GeminiDirectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A2B3C4D5E6F708192A3B4 /* GeminiDirectService.swift */; };
+		6E1A2B3C4D5E6F708192A3C7 /* GroqDirectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A2B3C4D5E6F708192A3C6 /* GroqDirectService.swift */; };
+		7E1A2B3C4D5E6F708192A3D9 /* DirectProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A2B3C4D5E6F708192A3D8 /* DirectProviderTests.swift */; };
 		415CD76F61CD7005D4F3337C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5B15DB5AF2A709DD87F02198 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -153,6 +157,10 @@
 		4EC5949FF7D4E5AC7947A151 /* TaskModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TaskModelTests.swift; path = TaskModelTests.swift; sourceTree = "<group>"; };
 		4B954263F73EA917A8C89BDB /* ToolRoundTripTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ToolRoundTripTests.swift; path = ToolRoundTripTests.swift; sourceTree = "<group>"; };
 		B4C79F13A13F732A8B4CB198 /* VoiceStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VoiceStateTests.swift; path = VoiceStateTests.swift; sourceTree = "<group>"; };
+		D1EC7B001A2B3C4D5E6F7081 /* DirectProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DirectProvider.swift; path = DirectProvider.swift; sourceTree = "<group>"; };
+		6E1A2B3C4D5E6F708192A3B4 /* GeminiDirectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GeminiDirectService.swift; path = GeminiDirectService.swift; sourceTree = "<group>"; };
+		6E1A2B3C4D5E6F708192A3C6 /* GroqDirectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GroqDirectService.swift; path = GroqDirectService.swift; sourceTree = "<group>"; };
+		7E1A2B3C4D5E6F708192A3D8 /* DirectProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DirectProviderTests.swift; path = DirectProviderTests.swift; sourceTree = "<group>"; };
 		F2C5B33075AEB8DD4A529EF8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
 		5B15DB5AF2A709DD87F02198 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Assets.xcassets; sourceTree = "<group>"; };
 		FBBEF4C78CF48650F02E7541 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
@@ -251,6 +259,9 @@
 				6F08D960AF14A52BF07D7CAB /* ConversationManager.swift */,
 				979807E57D1A9282DDE5B312 /* FastCommandRouter.swift */,
 				D9292A3E9664162481D38203 /* MockAIService.swift */,
+				D1EC7B001A2B3C4D5E6F7081 /* DirectProvider.swift */,
+				6E1A2B3C4D5E6F708192A3B4 /* GeminiDirectService.swift */,
+				6E1A2B3C4D5E6F708192A3C6 /* GroqDirectService.swift */,
 			);
 			name = AI;
 			path = AI;
@@ -419,6 +430,7 @@
 				4EC5949FF7D4E5AC7947A151 /* TaskModelTests.swift */,
 				4B954263F73EA917A8C89BDB /* ToolRoundTripTests.swift */,
 				B4C79F13A13F732A8B4CB198 /* VoiceStateTests.swift */,
+				7E1A2B3C4D5E6F708192A3D8 /* DirectProviderTests.swift */,
 			);
 			name = ZYRAXISTests;
 			path = ZYRAXISTests;
@@ -584,6 +596,9 @@
 				5A094C9C961EBE824BDFB4B1 /* MicButton.swift in Sources */,
 				88B1D999CF8D27431A7E6205 /* ZyraxisCoreView.swift in Sources */,
 				5040BE2D57D0DAF116A37ABA /* ZyraxisTheme.swift in Sources */,
+				D1EC7B001A2B3C4D5E6F7082 /* DirectProvider.swift in Sources */,
+				6E1A2B3C4D5E6F708192A3B5 /* GeminiDirectService.swift in Sources */,
+				6E1A2B3C4D5E6F708192A3C7 /* GroqDirectService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -608,6 +623,7 @@
 				3C54C13C1EABBE7F59541519 /* TaskModelTests.swift in Sources */,
 				09FED6CD68D9D877E74FC777 /* ToolRoundTripTests.swift in Sources */,
 				4D2F1C49F9B8AA058A6C5E46 /* VoiceStateTests.swift in Sources */,
+				7E1A2B3C4D5E6F708192A3D9 /* DirectProviderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

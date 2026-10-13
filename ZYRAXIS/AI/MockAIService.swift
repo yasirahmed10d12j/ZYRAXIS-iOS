@@ -58,6 +58,6 @@ public struct MockAIService: AIService, Sendable {
         if trimmed.isEmpty {
             return "[MOCK] I received an empty message. Type a command to test the transcript flow."
         }
-        return "[MOCK] Echoing '\(trimmed)'. Select the ZYRAXIS Backend provider with a configured backend for real AI."
+        return "[MOCK] Echoing '\(trimmed)'. Select Gemini or Groq in Settings with your API key for real AI."
     }
 }

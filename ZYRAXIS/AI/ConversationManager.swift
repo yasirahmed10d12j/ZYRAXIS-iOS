@@ -41,6 +41,8 @@ public final class ConversationManager: ObservableObject {
     private let fastRouter: FastCommandRouter
     private let mockService: any AIService
     private let backendService: any AIService
+    private let geminiService: GeminiDirectService
+    private let groqService: GroqDirectService
 
     private var streamTask: Task<Void, Never>?
     private var lastSeq: [UUID: Int] = [:]
@@ -56,7 +58,9 @@ public final class ConversationManager: ObservableObject {
         contextManager: ContextManager = ContextManager(),
         fastRouter: FastCommandRouter = FastCommandRouter(),
         mockService: any AIService,
-        backendService: any AIService
+        backendService: any AIService,
+        geminiService: GeminiDirectService = GeminiDirectService(),
+        groqService: GroqDirectService = GroqDirectService()
     ) {
         self.stateMachine = stateMachine
         self.settings = settings
@@ -66,12 +70,23 @@ public final class ConversationManager: ObservableObject {
         self.fastRouter = fastRouter
         self.mockService = mockService
         self.backendService = backendService
+        self.geminiService = geminiService
+        self.groqService = groqService
     }
 
     // MARK: - Service resolution
 
     private var activeService: any AIService {
-        settings.selectedProvider == .customBackend ? backendService : mockService
+        switch settings.selectedProvider {
+        case .customBackend:
+            return backendService
+        case .gemini:
+            return geminiService
+        case .groq:
+            return groqService
+        case .mock, .realtimeFuture:
+            return mockService
+        }
     }
 
     // MARK: - Public intents

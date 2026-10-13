@@ -123,7 +123,7 @@ public final class SettingsStore: ObservableObject {
         self.devWebSocketURLString = d.string(forKey: Keys.devWSURL) ?? ""
         self.stagingBaseURLString = d.string(forKey: Keys.stagingBackendURL) ?? ""
         self.stagingWebSocketURLString = d.string(forKey: Keys.stagingWSURL) ?? ""
-        let rawProvider = d.string(forKey: Keys.provider) ?? AIProvider.mock.rawValue
+        let rawProvider = d.string(forKey: Keys.provider) ?? AIProvider.gemini.rawValue
         self.selectedProvider = AIProvider(rawValue: rawProvider) ?? .mock
         // `bool(forKey:)` returns false when unset — default voice/memory/notifications ON.
         self.voiceEnabled = d.object(forKey: Keys.voice) as? Bool ?? true
@@ -179,7 +179,7 @@ public final class SettingsStore: ObservableObject {
         devWebSocketURLString = ""
         stagingBaseURLString = ""
         stagingWebSocketURLString = ""
-        selectedProvider = .mock
+        selectedProvider = .gemini
         voiceEnabled = true
         notificationsEnabled = true
         memoryEnabled = true

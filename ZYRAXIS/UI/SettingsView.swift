@@ -16,6 +16,32 @@ public struct SettingsView: View {
 
     public init() {}
 
+    // MARK: - Provider-aware API key
+
+    /// Keychain key for the currently selected provider. Direct providers
+    /// each have their own key; the backend keeps its own.
+    private var activeKeychainKey: String {
+        switch deps.settings.selectedProvider {
+        case .gemini:
+            return KeychainKeys.geminiAPIKey
+        case .groq:
+            return KeychainKeys.groqAPIKey
+        default:
+            return KeychainKeys.backendAPIKey
+        }
+    }
+
+    private var apiKeyFieldLabel: String {
+        switch deps.settings.selectedProvider {
+        case .gemini:
+            return "Gemini API key (Keychain)"
+        case .groq:
+            return "Groq API key (Keychain)"
+        default:
+            return "Backend API key (Keychain)"
+        }
+    }
+
     // MARK: - Bindings (explicit so nested SettingsStore works via EnvironmentObject)
 
     private func binding<T>(get: @escaping (SettingsStore) -> T, set: @escaping (SettingsStore, T) -> Void) -> Binding<T> {
@@ -52,6 +78,10 @@ public struct SettingsView: View {
                 }
             }
             .onAppear {
+                loadKeychainStatus()
+            }
+            .onChange(of: deps.settings.selectedProvider) { _, _ in
+                apiKeyInput = ""
                 loadKeychainStatus()
             }
             .alert("Reset all settings?", isPresented: $showingResetConfirm) {
@@ -111,7 +141,7 @@ public struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Slider(value: binding(get: { $0.connectionTimeout }, set: { $0.connectionTimeout = $1 }), in: 5...60, step: 5)
-            SecureField("Backend API key (Keychain)", text: $apiKeyInput)
+            SecureField(apiKeyFieldLabel, text: $apiKeyInput)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
             HStack {
@@ -133,6 +163,14 @@ public struct SettingsView: View {
                 Text("Backend provider: requires a running ZYRAXIS backend (HTTP + WebSocket, protocol v1) and a Keychain API key.")
                     .font(ZyraxisTheme.caption())
                     .foregroundStyle(deps.settings.backendConfig.isConfigured ? .secondary : ZyraxisTheme.warning)
+            } else if deps.settings.selectedProvider == .gemini {
+                Text("Gemini (direct): uses your free AI Studio key from Keychain — no backend server. Get a key at aistudio.google.com.")
+                    .font(ZyraxisTheme.caption())
+                    .foregroundStyle(.secondary)
+            } else if deps.settings.selectedProvider == .groq {
+                Text("Groq (direct): uses your free console.groq.com key from Keychain — no backend server.")
+                    .font(ZyraxisTheme.caption())
+                    .foregroundStyle(.secondary)
             } else {
                 Text("Realtime provider is not implemented yet.")
                     .font(ZyraxisTheme.caption())
@@ -280,7 +318,7 @@ public struct SettingsView: View {
 
     private func saveKey() {
         do {
-            try deps.keychain.save(apiKeyInput, forKey: KeychainKeys.backendAPIKey)
+            try deps.keychain.save(apiKeyInput, forKey: activeKeychainKey)
             apiKeyInput = ""
             keychainStatus = "API key saved to Keychain."
         } catch {
@@ -290,7 +328,7 @@ public struct SettingsView: View {
 
     private func deleteKey() {
         do {
-            try deps.keychain.delete(forKey: KeychainKeys.backendAPIKey)
+            try deps.keychain.delete(forKey: activeKeychainKey)
             keychainStatus = "API key deleted from Keychain."
         } catch {
             keychainStatus = "Delete failed: \(error.localizedDescription)"
@@ -299,7 +337,7 @@ public struct SettingsView: View {
 
     private func loadKeychainStatus() {
         do {
-            let existing = try deps.keychain.load(forKey: KeychainKeys.backendAPIKey)
+            let existing = try deps.keychain.load(forKey: activeKeychainKey)
             keychainStatus = (existing?.isEmpty == false) ? "API key present in Keychain." : "No API key stored."
         } catch {
             keychainStatus = "Keychain unavailable: \(error.localizedDescription)"

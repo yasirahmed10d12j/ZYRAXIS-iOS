@@ -7,6 +7,10 @@ public enum AIProvider: String, CaseIterable, Identifiable, Codable, Sendable {
     /// ZYRAXIS backend over HTTPS / WebSocket (Phase 2: BackendAIService).
     /// Requires a running backend + configured URLs + Keychain API key.
     case customBackend
+    /// Direct Gemini API calls with the user's own key (no custom backend).
+    case gemini
+    /// Direct Groq API calls with the user's own key (no custom backend).
+    case groq
     /// Future Gemini Live / realtime provider. Not implemented in Phase 2.
     case realtimeFuture
 
@@ -16,13 +20,15 @@ public enum AIProvider: String, CaseIterable, Identifiable, Codable, Sendable {
         switch self {
         case .mock: return "Mock (local UI dev)"
         case .customBackend: return "ZYRAXIS Backend"
+        case .gemini: return "Gemini (direct)"
+        case .groq: return "Groq (direct)"
         case .realtimeFuture: return "Realtime (future)"
         }
     }
 
     public var isImplemented: Bool {
         switch self {
-        case .mock, .customBackend: return true
+        case .mock, .customBackend, .gemini, .groq: return true
         case .realtimeFuture: return false
         }
     }

@@ -26,6 +26,8 @@ public enum AssistantErrorMapper {
                 return "The backend refused the request (forbidden)."
             case .notFound:
                 return "The backend endpoint was not found. Check the backend URL and version."
+            case .server(429, _):
+                return "The AI provider is rate-limiting requests. Wait a moment and try again."
             case .server(let code, _):
                 return "The backend returned an error (\(code)). Try again in a moment."
             case .decoding:

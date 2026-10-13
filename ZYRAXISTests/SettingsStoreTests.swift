@@ -13,7 +13,7 @@ final class SettingsStoreTests: XCTestCase {
 
     func testDefaultsAreSane() {
         let (_, s) = freshStore()
-        XCTAssertEqual(s.selectedProvider, .mock)
+        XCTAssertEqual(s.selectedProvider, .gemini)
         XCTAssertEqual(s.requestTimeout, 30, accuracy: 0.01)
         XCTAssertTrue(s.voiceEnabled)
         XCTAssertTrue(s.notificationsEnabled)
@@ -44,6 +44,6 @@ final class SettingsStoreTests: XCTestCase {
         s.resetToDefaults()
         XCTAssertEqual(s.backendBaseURLString, "")
         XCTAssertTrue(s.voiceEnabled)
-        XCTAssertEqual(s.selectedProvider, .mock)
+        XCTAssertEqual(s.selectedProvider, .gemini)
     }
 }

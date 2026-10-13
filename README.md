@@ -183,6 +183,32 @@ execution live server-side. The app only presents the user's own backend key
   the socket; without a configured backend the UI shows a friendly
   "not configured" error instead of attempting network I/O.
 
+### Direct providers (no custom backend server needed)
+
+The app can also call providers directly with **your own free-tier keys**:
+
+- Select provider **Gemini (direct)** or **Groq (direct)** in
+  **Settings → AI Backend → Provider** (default for new installs: Gemini).
+- Paste the key in the provider's **SecureField** (labeled per provider) →
+  **Save key**. Keys go straight to **Keychain** (`KeychainKeys.geminiAPIKey`
+  / `groqAPIKey`); the field shows only presence ("API key present in
+  Keychain"), values are never displayed, logged, or committed.
+  Get a free key at aistudio.google.com (Gemini) or console.groq.com (Groq).
+- `GeminiDirectService` / `GroqDirectService` (`AI/`) call
+  `…/v1beta/models/{model}:generateContent` /
+  `https://api.groq.com/openai/v1/chat/completions` with your key
+  (Gemini: `x-goog-api-key` header, never in the URL; Groq: Bearer header).
+  Models are configurable per service (`model`, defaults
+  `gemini-2.5-flash-lite` / `llama-3.1-8b-instant` — vendors rotate IDs,
+  verify live ones in the consoles). Timeouts use Settings → Request timeout;
+  Stop cancels in flight; 401/429/5xx map to friendly errors (missing key →
+  "Check the API key in Settings", never attempted without a key).
+- Text chat streams real token deltas over HTTPS SSE (`streamGenerateContent`
+  / `stream: true`) — same engine path as the backend. **Not implemented:**
+  Gemini Live / realtime voice WebSocket audio and Groq transcription. Voice
+  mic/STT/TTS are device-local Apple features and work unchanged; the voice
+  loop drives text turns through the same engine.
+
 ### Wire protocol (v1, see `Networking/BackendProtocol.swift`)
 
 Every frame is `{version, type, requestId, payload}`. Types: `session_start`,
@@ -337,11 +363,13 @@ Do steps in order. Stop and fix at the first failure — do not skip ahead.
 7. **Build.** ⌘B. Expected: zero errors. If concurrency errors appear,
    they will point at Task captures — the code uses `[weak …]` + static
    helpers throughout; do not silence with `@unchecked Sendable`.
-8. **Run tests.** ⌘U — all 16 suites, no backend needed.
-9. **Run the application.** Empty transcript + IDLE core + "NO BACKEND"
-   badge (mock provider default). Type a message → `[MOCK]` reply streams
-   in two chunks. Fast commands: `what time is it`, `stop`, `mic off`.
-10. **Configure backend.** Settings → AI Backend: Environment, base URL,
+8. **Run tests.** ⌘U — all suites, no backend needed.
+9. **Run the application.** Empty transcript + IDLE core. Default provider is
+    **Gemini (direct)** — without a key, sending shows a friendly "check the API key"
+    error; with your free AI Studio key in Settings → AI Backend it streams real answers.
+    Select **Mock** for offline `[MOCK]` UI testing (two-chunk replay). Fast commands:
+    `what time is it`, `stop`, `mic off`.
+10. **Configure backend (optional).** Settings → AI Backend: Environment, base URL,
     `wss://` URL, Keychain API key. Provider → ZYRAXIS Backend.
 11. **Test WebSocket.** Settings → Connection → Connect; badge goes
     ONLINE; DEBUG diagnostics show host, reconnects, ping round-trip.
