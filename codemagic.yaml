@@ -51,6 +51,7 @@ workflows:
           test -f "$XCODE_PROJECT/xcshareddata/xcschemes/$XCODE_SCHEME.xcscheme" || { echo "Missing shared scheme $XCODE_SCHEME.xcscheme"; exit 1; }
           grep -q "PRODUCT_BUNDLE_IDENTIFIER = $BUNDLE_ID" "$XCODE_PROJECT/project.pbxproj" || { echo "Bundle ID $BUNDLE_ID not found in project.pbxproj"; exit 1; }
           grep -q "PRODUCT_NAME = $XCODE_SCHEME" "$XCODE_PROJECT/project.pbxproj" || { echo "PRODUCT_NAME $XCODE_SCHEME not set in project.pbxproj (empty wrapper name breaks archive)"; exit 1; }
+          grep -q "PRODUCT_NAME = ZYRAXISTests" "$XCODE_PROJECT/project.pbxproj" || { echo "PRODUCT_NAME ZYRAXISTests not set in project.pbxproj (empty test bundle name breaks simulator tests)"; exit 1; }
           xcodebuild -list -project "$XCODE_PROJECT" | grep -q "$XCODE_SCHEME" || { echo "Scheme $XCODE_SCHEME not listed by xcodebuild -list"; exit 1; }
           echo "Project check passed: $XCODE_PROJECT / scheme $XCODE_SCHEME / bundle $BUNDLE_ID"
       - name: Run unit tests on simulator
@@ -127,6 +128,7 @@ workflows:
           test -f "$XCODE_PROJECT/xcshareddata/xcschemes/$XCODE_SCHEME.xcscheme" || { echo "Missing shared scheme $XCODE_SCHEME.xcscheme"; exit 1; }
           grep -q "PRODUCT_BUNDLE_IDENTIFIER = $BUNDLE_ID" "$XCODE_PROJECT/project.pbxproj" || { echo "Bundle ID $BUNDLE_ID not found in project.pbxproj"; exit 1; }
           grep -q "PRODUCT_NAME = $XCODE_SCHEME" "$XCODE_PROJECT/project.pbxproj" || { echo "PRODUCT_NAME $XCODE_SCHEME not set in project.pbxproj (empty wrapper name breaks archive)"; exit 1; }
+          grep -q "PRODUCT_NAME = ZYRAXISTests" "$XCODE_PROJECT/project.pbxproj" || { echo "PRODUCT_NAME ZYRAXISTests not set in project.pbxproj (empty test bundle name breaks simulator tests)"; exit 1; }
           xcodebuild -list -project "$XCODE_PROJECT" | grep -q "$XCODE_SCHEME" || { echo "Scheme $XCODE_SCHEME not listed by xcodebuild -list"; exit 1; }
           echo "Project check passed: $XCODE_PROJECT / scheme $XCODE_SCHEME / bundle $BUNDLE_ID"
       - name: Check signing prerequisites (fail fast without credentials)

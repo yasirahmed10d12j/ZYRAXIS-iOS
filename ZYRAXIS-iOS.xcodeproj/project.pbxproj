@@ -694,6 +694,7 @@
 					"@loader_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.zyraxis.assistant.tests;
+				PRODUCT_NAME = ZYRAXISTests;
 				SDKROOT = iphoneos;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ZYRAXIS-iOS.app/ZYRAXIS-iOS";
 			};
@@ -711,6 +712,7 @@
 					"@loader_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.zyraxis.assistant.tests;
+				PRODUCT_NAME = ZYRAXISTests;
 				SDKROOT = iphoneos;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ZYRAXIS-iOS.app/ZYRAXIS-iOS";
 			};
