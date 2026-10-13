@@ -76,7 +76,17 @@ workflows:
             -configuration "$XCODE_CONFIGURATION_TEST" \
             -destination "platform=iOS Simulator,id=$DEVICE_UDID" \
             -resultBundlePath build/logs/TestResults.xcresult \
+            -derivedDataPath build/derived \
             2>&1 | tee build/logs/test.log
+          # The simulator installer requires CFBundleIdentifier + CFBundleExecutable
+          # in the product plist — assert them here for a precise diagnostic.
+          SIM_INFO="build/derived/Build/Products/Debug-iphonesimulator/ZYRAXIS-iOS.app/Info.plist"
+          test -f "$SIM_INFO" || { echo "Simulator app Info.plist not found at $SIM_INFO"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$SIM_INFO" | grep -qx "com.zyraxis.assistant" \
+            || { echo "CFBundleIdentifier missing/wrong in simulator app Info.plist"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print CFBundleExecutable" "$SIM_INFO" | grep -qx "ZYRAXIS-iOS" \
+            || { echo "CFBundleExecutable missing/wrong in simulator app Info.plist (simulator install requires it)"; exit 1; }
+          plutil -p "$SIM_INFO" | tee build/logs/sim-info-plist.txt
       - name: Release device build check (NOT an archive, NOT installable)
         script: |
           #!/bin/sh
@@ -110,6 +120,12 @@ workflows:
           test -f "$APP_INFO" || { echo "Built app Info.plist not found at $APP_INFO"; exit 1; }
           /usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP_INFO" | grep -qx "com.zyraxis.assistant" \
             || { echo "CFBundleIdentifier missing/wrong in built app Info.plist"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print CFBundleExecutable" "$APP_INFO" | grep -qx "ZYRAXIS-iOS" \
+            || { echo "CFBundleExecutable missing/wrong in built app Info.plist"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print CFBundlePackageType" "$APP_INFO" | grep -qx "APPL" \
+            || { echo "CFBundlePackageType missing/wrong in built app Info.plist"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print CFBundleName" "$APP_INFO" | grep -qx "ZYRAXIS-iOS" \
+            || { echo "CFBundleName missing/wrong in built app Info.plist"; exit 1; }
           # Full built-plist evidence for diagnosing app metadata (executable,
           # version, display name, usage strings) without gating the build.
           plutil -p "$APP_INFO" | tee build/logs/built-info-plist.txt
@@ -117,6 +133,7 @@ workflows:
     artifacts:
       - build/logs/test.log
       - build/logs/build-device.log
+      - build/logs/sim-info-plist.txt
       - build/logs/built-info-plist.txt
       - build/logs/TestResults.xcresult
       - build/derived/Build/Products/Release-iphoneos/ZYRAXIS-iOS.app

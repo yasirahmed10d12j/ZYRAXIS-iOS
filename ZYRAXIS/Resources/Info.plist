@@ -6,9 +6,18 @@
     <string>ZYRAXIS</string>
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-    <!-- NOTE: CFBundleIdentifier expands from PRODUCT_BUNDLE_IDENTIFIER at build
-         time (same value as INFOPLIST_KEY_CFBundleIdentifier in project.pbxproj).
-         Single source of truth: the build setting. -->
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <!-- NOTE: Identifier/Executable/Name expand from build settings at build
+         time (same values as PRODUCT_BUNDLE_IDENTIFIER / EXECUTABLE_NAME /
+         PRODUCT_NAME, and INFOPLIST_KEY_CFBundleIdentifier in project.pbxproj).
+         Single source of truth: the build settings. A custom Info.plist does
+         NOT get these keys synthesized — the simulator installer and archive
+         validation both require them present. -->
     <key>CFBundleShortVersionString</key>
     <string>0.5.0</string>
     <key>CFBundleVersion</key>
