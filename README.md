@@ -353,3 +353,34 @@ Do steps in order. Stop and fix at the first failure — do not skip ahead.
     unregistered tool → activity "Unsupported tool" + structured
     `tool_result` error back; register a read-only tool later to verify
     the execution path (no destructive tools, ever, on this client).
+
+## Codemagic CI/CD setup
+
+`codemagic.yaml` at the repo root defines two workflows (verified against
+`ZYRAXIS-iOS.xcodeproj`, scheme `ZYRAXIS-iOS`, bundle ID
+`com.zyraxis.assistant`, iOS 17.0, Xcode 16+):
+
+- `ios-simulator` (push to `main`) — no Apple credentials needed. Runs the
+  17 XCTest suites on an available simulator and produces an **unsigned**
+  Release archive as a compile check. This is NOT an installable IPA.
+- `ios-release-ipa` (tag `v*`) — **signed** IPA via automatic signing.
+  Requires the setup below; fails fast with a clear message until then.
+
+Connect repo: Codemagic → Add application → GitHub →
+`yasirahmed10d12j/ZYRAXIS-iOS` → Project type "iOS App" → the workflows are
+read from `codemagic.yaml` automatically. Start with `ios-simulator`.
+
+Signing setup for `ios-release-ipa` (all in Codemagic UI, never in the repo):
+
+1. Codemagic → Teams → code signing identities → add your Apple Distribution
+   certificate (`CERTIFICATE_PRIVATE_KEY`).
+2. Codemagic → App Store Connect integration → add the API key (provides
+   `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_IDENTIFIER`,
+   `APP_STORE_CONNECT_PRIVATE_KEY`).
+3. Apple Developer Portal → register bundle ID `com.zyraxis.assistant`.
+4. Push a tag (`v0.5.0`) to trigger the signed build; the IPA appears under
+   build artifacts (`build/ipa/*.ipa`).
+
+No commit/push is done by CI. Validation status: YAML statically checked
+(no Tabs, cross-checked paths/scheme/bundle ID); no Codemagic cloud build has
+been run yet, so no IPA has been built or signed.

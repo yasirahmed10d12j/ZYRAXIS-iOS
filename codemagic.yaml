@@ -1,0 +1,177 @@
+# codemagic.yaml — CI/CD for ZYRAXIS-iOS (native Swift/Xcode, zero dependencies).
+#
+# VERIFIED PROJECT FACTS (do not change without re-auditing the .xcodeproj):
+#   Project file : ZYRAXIS-iOS.xcodeproj   (no .xcworkspace, no Package.swift, no Podfile)
+#   Scheme       : ZYRAXIS-iOS             (shared scheme: ZYRAXIS-iOS.xcodeproj/xcshareddata/xcschemes/ZYRAXIS-iOS.xcscheme)
+#   App target   : ZYRAXIS-iOS             (PRODUCT_MODULE_NAME = ZYRAXIS, so @testable import ZYRAXIS works)
+#   Test target  : ZYRAXISTests            (bundle id com.zyraxis.assistant.tests)
+#   Bundle ID    : com.zyraxis.assistant
+#   Deployment   : iOS 17.0, iPhone only (TARGETED_DEVICE_FAMILY = 1), Swift 5.0
+#   Signing      : CODE_SIGN_STYLE = Automatic, DEVELOPMENT_TEAM empty (team selected in Xcode/Codemagic, never in repo)
+#   SDK need     : Xcode 16+ with iOS 17 SDK+ (scheme LastUpgradeVersion 1600 = Xcode 16)
+#
+# WORKFLOWS:
+#   1. ios-simulator  — no Apple credentials needed. Runs XCTest on a simulator
+#                       and produces an UNSIGNED generic-device archive (build check only,
+#                       NOT a device-installable IPA).
+#   2. ios-release-ipa — SIGNED, device-/store-installable IPA. Requires the Apple
+#                       signing setup described in README § "Codemagic setup".
+#                       Fails fast with a clear message when signing is not configured.
+#
+# SECRETS POLICY: no certificates, passwords, API keys, or provisioning profiles
+# are stored here. Signing credentials live only in Codemagic UI (Teams / code
+# signing identities / environment variable groups) and Apple Developer Portal.
+
+workflows:
+  ios-simulator:
+    name: iOS Simulator Tests + Unsigned Build
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      vars:
+        XCODE_PROJECT: ZYRAXIS-iOS.xcodeproj
+        XCODE_SCHEME: ZYRAXIS-iOS
+        XCODE_CONFIGURATION_TEST: Debug
+        XCODE_CONFIGURATION_BUILD: Release
+        BUNDLE_ID: com.zyraxis.assistant
+      xcode: 16.2
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Verify project and shared scheme
+        script: |
+          #!/bin/sh
+          set -e -u
+          test -f "$XCODE_PROJECT/project.pbxproj" || { echo "Missing $XCODE_PROJECT/project.pbxproj"; exit 1; }
+          test -f "$XCODE_PROJECT/xcshareddata/xcschemes/$XCODE_SCHEME.xcscheme" || { echo "Missing shared scheme $XCODE_SCHEME.xcscheme"; exit 1; }
+          grep -q "PRODUCT_BUNDLE_IDENTIFIER = $BUNDLE_ID" "$XCODE_PROJECT/project.pbxproj" || { echo "Bundle ID $BUNDLE_ID not found in project.pbxproj"; exit 1; }
+          xcodebuild -list -project "$XCODE_PROJECT" | grep -q "$XCODE_SCHEME" || { echo "Scheme $XCODE_SCHEME not listed by xcodebuild -list"; exit 1; }
+          echo "Project check passed: $XCODE_PROJECT / scheme $XCODE_SCHEME / bundle $BUNDLE_ID"
+      - name: Run unit tests on simulator
+        script: |
+          #!/bin/sh
+          set -e -u
+          mkdir -p build/logs
+          # Pick the first available iPhone simulator at runtime instead of
+          # hardcoding one: the exact simulator set varies per Codemagic image.
+          # (README's iPhone 11 Pro Max is the reference device, not the CI device.)
+          DEVICE_UDID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; devs=[d for r in json.load(sys.stdin)["devices"].values() for d in r if d.get("isAvailable", True) and "iPhone" in d.get("name","")]; print(devs[0]["udid"] if devs else "")')"
+          if [ -z "$DEVICE_UDID" ]; then
+            echo "No available iPhone simulator found; skipping tests (see build/logs/simctl.txt)."
+            xcrun simctl list devices available > build/logs/simctl.txt 2>&1 || true
+            exit 1
+          fi
+          echo "Testing on simulator UDID: $DEVICE_UDID"
+          xcodebuild test \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration "$XCODE_CONFIGURATION_TEST" \
+            -destination "platform=iOS Simulator,id=$DEVICE_UDID" \
+            -resultBundlePath build/logs/TestResults.xcresult \
+            2>&1 | tee build/logs/test.log
+      - name: Unsigned Release archive (build check only, NOT an installable IPA)
+        script: |
+          #!/bin/sh
+          set -e -u
+          mkdir -p build/logs build/unsigned
+          # CODE_SIGNING_ALLOWED=NO proves the device configuration compiles
+          # without any Apple credentials. Output is an unsigned .xcarchive.
+          xcodebuild archive \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration "$XCODE_CONFIGURATION_BUILD" \
+            -archivePath build/unsigned/ZYRAXIS-iOS.xcarchive \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            2>&1 | tee build/logs/archive-unsigned.log
+          echo "Unsigned archive written to build/unsigned/ZYRAXIS-iOS.xcarchive (not installable on devices)."
+    artifacts:
+      - build/logs/test.log
+      - build/logs/archive-unsigned.log
+      - build/logs/TestResults.xcresult
+      - build/unsigned/ZYRAXIS-iOS.xcarchive
+
+  ios-release-ipa:
+    name: iOS Release IPA (Signed)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      vars:
+        XCODE_PROJECT: ZYRAXIS-iOS.xcodeproj
+        XCODE_SCHEME: ZYRAXIS-iOS
+        BUNDLE_ID: com.zyraxis.assistant
+      xcode: 16.2
+      ios_signing:
+        distribution_type: app_store
+        bundle_ids:
+          - $BUNDLE_ID
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'v*'
+          include: true
+          source: true
+    scripts:
+      - name: Verify project and shared scheme
+        script: |
+          #!/bin/sh
+          set -e -u
+          test -f "$XCODE_PROJECT/project.pbxproj" || { echo "Missing $XCODE_PROJECT/project.pbxproj"; exit 1; }
+          test -f "$XCODE_PROJECT/xcshareddata/xcschemes/$XCODE_SCHEME.xcscheme" || { echo "Missing shared scheme $XCODE_SCHEME.xcscheme"; exit 1; }
+          grep -q "PRODUCT_BUNDLE_IDENTIFIER = $BUNDLE_ID" "$XCODE_PROJECT/project.pbxproj" || { echo "Bundle ID $BUNDLE_ID not found in project.pbxproj"; exit 1; }
+          xcodebuild -list -project "$XCODE_PROJECT" | grep -q "$XCODE_SCHEME" || { echo "Scheme $XCODE_SCHEME not listed by xcodebuild -list"; exit 1; }
+          echo "Project check passed: $XCODE_PROJECT / scheme $XCODE_SCHEME / bundle $BUNDLE_ID"
+      - name: Check signing prerequisites (fail fast without credentials)
+        script: |
+          #!/bin/sh
+          set -u
+          # App Store Connect API key (Codemagic "App Store Connect" integration or env vars)
+          # and an Apple code-signing identity are REQUIRED for a signed IPA.
+          # These are Codemagic env vars / keychain identities — never committed files.
+          missing=""
+          [ -n "${APP_STORE_CONNECT_ISSUER_ID:-}" ] || missing="$missing APP_STORE_CONNECT_ISSUER_ID"
+          [ -n "${APP_STORE_CONNECT_KEY_IDENTIFIER:-}" ] || missing="$missing APP_STORE_CONNECT_KEY_IDENTIFIER"
+          [ -n "${APP_STORE_CONNECT_PRIVATE_KEY:-}" ] || missing="$missing APP_STORE_CONNECT_PRIVATE_KEY"
+          [ -n "${CERTIFICATE_PRIVATE_KEY:-}" ] || missing="$missing CERTIFICATE_PRIVATE_KEY"
+          if [ -n "$missing" ]; then
+            echo "Signing prerequisites missing:$missing"
+            echo "Configure them in Codemagic UI (see README Codemagic setup), then re-run this workflow."
+            echo "Use the ios-simulator workflow for credential-free build checks meanwhile."
+            exit 1
+          fi
+          echo "Signing prerequisites present."
+      - name: Set up keychain and fetch signing files
+        script: |
+          #!/bin/sh
+          set -e -u
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+      - name: Apply provisioning profiles to Xcode project
+        script: |
+          #!/bin/sh
+          set -e -u
+          xcode-project use-profiles
+      - name: Archive and export signed IPA
+        script: |
+          #!/bin/sh
+          set -e -u
+          mkdir -p build/logs build/ipa
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME" \
+            --archive-directory build \
+            2>&1 | tee build/logs/build-ipa.log
+          echo "Signed IPA export finished; see build/ipa."
+    artifacts:
+      - build/ipa/*.ipa
+      - build/logs/build-ipa.log
+      - build/*.xcarchive
