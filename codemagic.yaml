@@ -110,15 +110,13 @@ workflows:
       xcode: 16.2
       ios_signing:
         distribution_type: app_store
-        bundle_ids:
-          - $BUNDLE_ID
+        bundle_identifier: com.zyraxis.assistant
     triggering:
       events:
         - tag
       tag_patterns:
-        - pattern: 'v*'
+        - pattern: "v*"
           include: true
-          source: true
     scripts:
       - name: Verify project and shared scheme
         script: |
