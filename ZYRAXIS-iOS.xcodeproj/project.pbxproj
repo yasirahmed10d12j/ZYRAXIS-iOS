@@ -659,6 +659,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.zyraxis.assistant;
 				PRODUCT_MODULE_NAME = ZYRAXIS;
+				PRODUCT_NAME = ZYRAXIS-iOS;
 				SDKROOT = iphoneos;
 			};
 			name = Debug;
@@ -676,6 +677,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.zyraxis.assistant;
 				PRODUCT_MODULE_NAME = ZYRAXIS;
+				PRODUCT_NAME = ZYRAXIS-iOS;
 				SDKROOT = iphoneos;
 			};
 			name = Release;
