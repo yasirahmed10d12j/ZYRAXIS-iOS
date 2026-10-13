@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDisplayName</key>
+    <string>ZYRAXIS</string>
+    <!-- NOTE: no CFBundleIdentifier here — Xcode generates it from
+         PRODUCT_BUNDLE_IDENTIFIER (Config/Shared.xcconfig target settings).
+         Keep them in one place so the bundle ID stays easy to change. -->
+    <key>CFBundleShortVersionString</key>
+    <string>0.5.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+    </array>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>ZYRAXIS uses the microphone for voice capture and optional live transcription. Audio levels animate the core.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>ZYRAXIS will use the camera for future visual analysis. Phase 4 requests permission only.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>ZYRAXIS uses speech recognition for optional live transcription of your voice commands. Enable it in Settings to talk to ZYRAXIS.</string>
+</dict>
+</plist>

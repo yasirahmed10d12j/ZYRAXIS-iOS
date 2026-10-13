@@ -1,0 +1,5 @@
+#include "Shared.xcconfig"
+// Release: quiet, production-safe. No verbose diagnostics, no secrets.
+// ZYRAXIS_BACKEND_ENV is an informational build marker only — the runtime
+// backend environment is selected in SettingsStore (Dev/Staging/Prod).
+ZYRAXIS_BACKEND_ENV = production

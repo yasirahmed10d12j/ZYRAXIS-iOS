@@ -1,0 +1,35 @@
+# Xcode / macOS
+.DS_Store
+*.xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xccheckout
+*.xcscmblueprint
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# CocoaPods (not used in Phase 1 — reserved)
+Pods/
+
+# Windows authoring artifacts
+Thumbs.db
+Desktop.ini
+
+# Secrets — never commit
+*.p12
+*.mobileprovision
+*.key
+GoogleService-Info.plist

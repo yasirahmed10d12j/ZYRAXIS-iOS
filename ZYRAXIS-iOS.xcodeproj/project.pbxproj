@@ -1,0 +1,752 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		C143DA0D72224D270A12D467 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B16F125D78B14CC56B155B5A /* AppConfig.swift */; };
+		EB5492528BE048CE967A9055 /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = 065F508CEF1AC8E1363C9CC0 /* AppDependencies.swift */; };
+		697AA7F4219F1007BD07DDD3 /* ZYRAXISApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCAE764EF95395ED1D73146A /* ZYRAXISApp.swift */; };
+		927D2D1D6CDA9F2BBAD8298F /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = D567148D931FFE400C248B13 /* AppError.swift */; };
+		A6E76524A7BB96403EB2A402 /* AssistantState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7B7EB6FABED3DE5F205D62B /* AssistantState.swift */; };
+		9952DE0D76A25D84432DEAED /* AssistantStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DF8FA6D699E38449F1B556A /* AssistantStateMachine.swift */; };
+		5057187F9E557E461C7753A6 /* Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6F79F1CC13B92BA3963FD60 /* Diagnostics.swift */; };
+		6C715810FC227CC166030DC9 /* ZyraxisLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9DD9597F8C566FE5396B8C /* ZyraxisLogger.swift */; };
+		4F9BCEAEB4E6C274E82AE2CB /* AIRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0591188F9CB1F2CEDEE6366B /* AIRequest.swift */; };
+		12F1433D5C8F397704F46C22 /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7056D313C03D9BC58114F83 /* AIService.swift */; };
+		D90BA52F4A516C893341975F /* AIStreamEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E9865A7D1D7656BC6C06888 /* AIStreamEvent.swift */; };
+		C98A6CEFE6ECD9EDD7202F2E /* AssistantErrorMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDEB7D29F4E0B139F297ACDF /* AssistantErrorMapper.swift */; };
+		ADA9CA0122E8E709F24C336F /* BackendAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB16E523B60132C31CF58A89 /* BackendAIService.swift */; };
+		6A35FAF46D851527BC34EE06 /* ContextManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F8DE449B476F7326932D50 /* ContextManager.swift */; };
+		27D2CA3ECE263AD4EB1203CF /* ConversationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F08D960AF14A52BF07D7CAB /* ConversationManager.swift */; };
+		24433C154AB3AE55459147AE /* FastCommandRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 979807E57D1A9282DDE5B312 /* FastCommandRouter.swift */; };
+		97CBAD736BD9F9762F83D2EB /* MockAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9292A3E9664162481D38203 /* MockAIService.swift */; };
+		6E2E620AA61B2D980E8FB205 /* AppleSpeechTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA11087E20BD82BB2CD9E627 /* AppleSpeechTranscriber.swift */; };
+		A189C51346589A4A9BBC47D5 /* AVSpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF39B28537CF2FDB382B2554 /* AVSpeechService.swift */; };
+		52EC5E57A82C02E8D95BED9A /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 519EDC8C15B8AB8708B1DD29 /* SpeechService.swift */; };
+		C6A51868B932CEE5A638BEF4 /* STTProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50544F9D4713AC9B352BF8A3 /* STTProvider.swift */; };
+		D5BCA71E15BA1A6066EF4B00 /* VoiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00E8081D7E7758B796F7B70 /* VoiceManager.swift */; };
+		2687C85E02510B32C767E0D2 /* VoiceState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D328DB47CBD9522D72F25743 /* VoiceState.swift */; };
+		9B0ECFE2C7F0A7A981F95BAC /* VisionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AF60432D1978FBF72DC847 /* VisionService.swift */; };
+		1159ADA755DFAE70D7FF96C4 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 603E448C8ABCFF11A1A402AE /* APIClient.swift */; };
+		8EB9DA66F0712203678CBC9B /* BackendConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7356FD5685EFCF06159A528 /* BackendConfig.swift */; };
+		EA424E7EF6AFE5923AC69B1D /* BackendProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 787C43EC54735AE91CBFF560 /* BackendProtocol.swift */; };
+		4E9D6288FF38E31842AEF332 /* ConnectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0DB19F2FB346417AF9B1193 /* ConnectionState.swift */; };
+		07C0E6CA6FF31A270E7FFF63 /* NetworkError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD760087231D537D185FF49 /* NetworkError.swift */; };
+		7263414C2C613B67C360D83D /* ReconnectPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21691CC9B91A489B6221E914 /* ReconnectPolicy.swift */; };
+		7DFE67C83D23DFC02AD94EBE /* WebSocketManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 679CBF20B5DEDEC5D0A14FCB /* WebSocketManager.swift */; };
+		5B6BC7217D779C38F78A1BD6 /* InMemoryMemoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68B8E0B3541817DFB4A53FBA /* InMemoryMemoryService.swift */; };
+		050569859778068F2F322123 /* MemoryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5C52EE3586B4B1AF69D5808 /* MemoryItem.swift */; };
+		FDF1149E3470EEF26D1B3A0B /* MemoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36E8F92D9091BEAEB7B06E0B /* MemoryService.swift */; };
+		C7A7A63041F457BE8D8B11A0 /* LocalTaskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 863B8020760D82CB58F296E5 /* LocalTaskService.swift */; };
+		6563A9BBF5EE8A747BDFD920 /* TaskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A3812F79D0F31435BFECD0E /* TaskService.swift */; };
+		24E60976CA38517C9615C5D3 /* ZyraxisTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DA606ECCF1F8D6FE1F1E951 /* ZyraxisTask.swift */; };
+		60000EBE54BAB2A27047A662 /* AppInfoTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BEE9584661F1F8495D6B67B /* AppInfoTool.swift */; };
+		AA75FC882900C201DE23DF5C /* ToolRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D60C0B6FBA1A0FA14ED7EF /* ToolRegistry.swift */; };
+		F67DE84C3D88AABBD4BA29AE /* AssistantActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 392FD4DF1E9DB7082F22224E /* AssistantActivity.swift */; };
+		26FD20B0C9F3E6BEAA9088C6 /* ConversationMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50AD0C80A3B3B27BCFC5101B /* ConversationMessage.swift */; };
+		C1E6209BD54C3C276DA7CF1F /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 217AAB731D3EE54071866587 /* NotificationService.swift */; };
+		0BF2C77275CD25E6667AF9A1 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD6F427326BEC061AC6F12BF /* SettingsStore.swift */; };
+		EF3A9F6C405AC393BBB5EABC /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FD62D2538738693607607B /* KeychainService.swift */; };
+		A83CBC0163BBBF15F638B718 /* CommandInputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2195AA86F1BD369A76267CC5 /* CommandInputBar.swift */; };
+		58E2610CEBBEDE553DB4A689 /* ConversationTranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82FD8668F3A9494C50BCE8FA /* ConversationTranscriptView.swift */; };
+		2DB6073C6D23E34F50703A89 /* MainAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658248B75423870323178154 /* MainAssistantView.swift */; };
+		F593D79545D42D8E1279F6FE /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 902A16264C26BA0A2A6017A7 /* SettingsView.swift */; };
+		EBC467350862B8955170F09E /* ActivityRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DCD0EF22806E68FEAB8A3F /* ActivityRow.swift */; };
+		5642EFC286FCEE4033693F90 /* ConnectionBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8DE0EB4B1875BFECF0D49D9 /* ConnectionBadge.swift */; };
+		75C0B4291BB4BBEAED578307 /* GlassPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B3A9B619707D3E7D6C3703 /* GlassPanel.swift */; };
+		5A094C9C961EBE824BDFB4B1 /* MicButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D568ABA4826DB1921EE0A7D /* MicButton.swift */; };
+		88B1D999CF8D27431A7E6205 /* ZyraxisCoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E968CC1B5D6B47F41245A826 /* ZyraxisCoreView.swift */; };
+		5040BE2D57D0DAF116A37ABA /* ZyraxisTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97552BC2B0A38CBA7DBD7D5B /* ZyraxisTheme.swift */; };
+		6553B49DAA400D50D392B0D4 /* AIProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9225BBEA8F0D54337AFE2753 /* AIProtocolTests.swift */; };
+		39C39151FA1F6E0D82165535 /* AssistantErrorMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4837DF2642338FC9C826AF4 /* AssistantErrorMapperTests.swift */; };
+		5170FFCBEC183FAA7E9A1CE2 /* AssistantStateMachineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1503E7FA322912E300311B10 /* AssistantStateMachineTests.swift */; };
+		082844A866BCBAC92B94CE7C /* ContextManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46B5A0F49ABD22EE19DE3B4A /* ContextManagerTests.swift */; };
+		63666B3A0B81C540D02D054C /* ConversationEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC6D2B1F44051855EE9E9049 /* ConversationEngineTests.swift */; };
+		EA923E282F4C8165B67852D6 /* EnvironmentConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AC8DD84864D1CFBF096EAB2 /* EnvironmentConfigTests.swift */; };
+		C3F720C7EED5361C1222E676 /* FastCommandRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0D1EEAE0DB6F62A2658338D /* FastCommandRouterTests.swift */; };
+		FA63724E029DA7E4F3E21DD4 /* MemoryModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 386358CE14C2EB09E69495EC /* MemoryModelTests.swift */; };
+		7312CC97CA0B795DA38CC5BD /* MemoryRoundTripTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31CF040B445F13E2C427C42B /* MemoryRoundTripTests.swift */; };
+		9E58A784268E4C44C8397206 /* NetworkErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D9BBEB54A5F4C8DF9F9262E /* NetworkErrorTests.swift */; };
+		B10F7FE6583E1338E1254CE2 /* ReconnectPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FEF2935BF507D807E7E593B /* ReconnectPolicyTests.swift */; };
+		25BC6C16C01517C7E8E39C10 /* RequestTimingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D19263E3E52B218F2F7880F /* RequestTimingTests.swift */; };
+		2A4CFE0944AEAE0FFEED8677 /* SettingsPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 532F068D53489ED2AE435258 /* SettingsPersistenceTests.swift */; };
+		730C562859C3D8EE70BE387F /* SettingsStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D514145EDEF6E0906EF8AE68 /* SettingsStoreTests.swift */; };
+		3C54C13C1EABBE7F59541519 /* TaskModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EC5949FF7D4E5AC7947A151 /* TaskModelTests.swift */; };
+		09FED6CD68D9D877E74FC777 /* ToolRoundTripTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B954263F73EA917A8C89BDB /* ToolRoundTripTests.swift */; };
+		4D2F1C49F9B8AA058A6C5E46 /* VoiceStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4C79F13A13F732A8B4CB198 /* VoiceStateTests.swift */; };
+		415CD76F61CD7005D4F3337C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5B15DB5AF2A709DD87F02198 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B16F125D78B14CC56B155B5A /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppConfig.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		065F508CEF1AC8E1363C9CC0 /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDependencies.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
+		FCAE764EF95395ED1D73146A /* ZYRAXISApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ZYRAXISApp.swift; path = ZYRAXISApp.swift; sourceTree = "<group>"; };
+		D567148D931FFE400C248B13 /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppError.swift; path = AppError.swift; sourceTree = "<group>"; };
+		B7B7EB6FABED3DE5F205D62B /* AssistantState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AssistantState.swift; path = AssistantState.swift; sourceTree = "<group>"; };
+		5DF8FA6D699E38449F1B556A /* AssistantStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AssistantStateMachine.swift; path = AssistantStateMachine.swift; sourceTree = "<group>"; };
+		C6F79F1CC13B92BA3963FD60 /* Diagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Diagnostics.swift; path = Diagnostics.swift; sourceTree = "<group>"; };
+		4C9DD9597F8C566FE5396B8C /* ZyraxisLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ZyraxisLogger.swift; path = ZyraxisLogger.swift; sourceTree = "<group>"; };
+		0591188F9CB1F2CEDEE6366B /* AIRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AIRequest.swift; path = AIRequest.swift; sourceTree = "<group>"; };
+		B7056D313C03D9BC58114F83 /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AIService.swift; path = AIService.swift; sourceTree = "<group>"; };
+		6E9865A7D1D7656BC6C06888 /* AIStreamEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AIStreamEvent.swift; path = AIStreamEvent.swift; sourceTree = "<group>"; };
+		CDEB7D29F4E0B139F297ACDF /* AssistantErrorMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AssistantErrorMapper.swift; path = AssistantErrorMapper.swift; sourceTree = "<group>"; };
+		BB16E523B60132C31CF58A89 /* BackendAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackendAIService.swift; path = BackendAIService.swift; sourceTree = "<group>"; };
+		43F8DE449B476F7326932D50 /* ContextManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContextManager.swift; path = ContextManager.swift; sourceTree = "<group>"; };
+		6F08D960AF14A52BF07D7CAB /* ConversationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ConversationManager.swift; path = ConversationManager.swift; sourceTree = "<group>"; };
+		979807E57D1A9282DDE5B312 /* FastCommandRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FastCommandRouter.swift; path = FastCommandRouter.swift; sourceTree = "<group>"; };
+		D9292A3E9664162481D38203 /* MockAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MockAIService.swift; path = MockAIService.swift; sourceTree = "<group>"; };
+		BA11087E20BD82BB2CD9E627 /* AppleSpeechTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppleSpeechTranscriber.swift; path = AppleSpeechTranscriber.swift; sourceTree = "<group>"; };
+		CF39B28537CF2FDB382B2554 /* AVSpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AVSpeechService.swift; path = AVSpeechService.swift; sourceTree = "<group>"; };
+		519EDC8C15B8AB8708B1DD29 /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SpeechService.swift; path = SpeechService.swift; sourceTree = "<group>"; };
+		50544F9D4713AC9B352BF8A3 /* STTProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = STTProvider.swift; path = STTProvider.swift; sourceTree = "<group>"; };
+		A00E8081D7E7758B796F7B70 /* VoiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VoiceManager.swift; path = VoiceManager.swift; sourceTree = "<group>"; };
+		D328DB47CBD9522D72F25743 /* VoiceState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VoiceState.swift; path = VoiceState.swift; sourceTree = "<group>"; };
+		99AF60432D1978FBF72DC847 /* VisionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VisionService.swift; path = VisionService.swift; sourceTree = "<group>"; };
+		603E448C8ABCFF11A1A402AE /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = APIClient.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		B7356FD5685EFCF06159A528 /* BackendConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackendConfig.swift; path = BackendConfig.swift; sourceTree = "<group>"; };
+		787C43EC54735AE91CBFF560 /* BackendProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackendProtocol.swift; path = BackendProtocol.swift; sourceTree = "<group>"; };
+		E0DB19F2FB346417AF9B1193 /* ConnectionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ConnectionState.swift; path = ConnectionState.swift; sourceTree = "<group>"; };
+		1BD760087231D537D185FF49 /* NetworkError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NetworkError.swift; path = NetworkError.swift; sourceTree = "<group>"; };
+		21691CC9B91A489B6221E914 /* ReconnectPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ReconnectPolicy.swift; path = ReconnectPolicy.swift; sourceTree = "<group>"; };
+		679CBF20B5DEDEC5D0A14FCB /* WebSocketManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WebSocketManager.swift; path = WebSocketManager.swift; sourceTree = "<group>"; };
+		68B8E0B3541817DFB4A53FBA /* InMemoryMemoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InMemoryMemoryService.swift; path = InMemoryMemoryService.swift; sourceTree = "<group>"; };
+		E5C52EE3586B4B1AF69D5808 /* MemoryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MemoryItem.swift; path = MemoryItem.swift; sourceTree = "<group>"; };
+		36E8F92D9091BEAEB7B06E0B /* MemoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MemoryService.swift; path = MemoryService.swift; sourceTree = "<group>"; };
+		863B8020760D82CB58F296E5 /* LocalTaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LocalTaskService.swift; path = LocalTaskService.swift; sourceTree = "<group>"; };
+		8A3812F79D0F31435BFECD0E /* TaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TaskService.swift; path = TaskService.swift; sourceTree = "<group>"; };
+		1DA606ECCF1F8D6FE1F1E951 /* ZyraxisTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ZyraxisTask.swift; path = ZyraxisTask.swift; sourceTree = "<group>"; };
+		2BEE9584661F1F8495D6B67B /* AppInfoTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppInfoTool.swift; path = AppInfoTool.swift; sourceTree = "<group>"; };
+		48D60C0B6FBA1A0FA14ED7EF /* ToolRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ToolRegistry.swift; path = ToolRegistry.swift; sourceTree = "<group>"; };
+		392FD4DF1E9DB7082F22224E /* AssistantActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AssistantActivity.swift; path = AssistantActivity.swift; sourceTree = "<group>"; };
+		50AD0C80A3B3B27BCFC5101B /* ConversationMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ConversationMessage.swift; path = ConversationMessage.swift; sourceTree = "<group>"; };
+		217AAB731D3EE54071866587 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotificationService.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		FD6F427326BEC061AC6F12BF /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SettingsStore.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		08FD62D2538738693607607B /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = KeychainService.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		2195AA86F1BD369A76267CC5 /* CommandInputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommandInputBar.swift; path = CommandInputBar.swift; sourceTree = "<group>"; };
+		82FD8668F3A9494C50BCE8FA /* ConversationTranscriptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ConversationTranscriptView.swift; path = ConversationTranscriptView.swift; sourceTree = "<group>"; };
+		658248B75423870323178154 /* MainAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MainAssistantView.swift; path = MainAssistantView.swift; sourceTree = "<group>"; };
+		902A16264C26BA0A2A6017A7 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SettingsView.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		89DCD0EF22806E68FEAB8A3F /* ActivityRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ActivityRow.swift; path = ActivityRow.swift; sourceTree = "<group>"; };
+		F8DE0EB4B1875BFECF0D49D9 /* ConnectionBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ConnectionBadge.swift; path = ConnectionBadge.swift; sourceTree = "<group>"; };
+		C1B3A9B619707D3E7D6C3703 /* GlassPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GlassPanel.swift; path = GlassPanel.swift; sourceTree = "<group>"; };
+		1D568ABA4826DB1921EE0A7D /* MicButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MicButton.swift; path = MicButton.swift; sourceTree = "<group>"; };
+		E968CC1B5D6B47F41245A826 /* ZyraxisCoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ZyraxisCoreView.swift; path = ZyraxisCoreView.swift; sourceTree = "<group>"; };
+		97552BC2B0A38CBA7DBD7D5B /* ZyraxisTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ZyraxisTheme.swift; path = ZyraxisTheme.swift; sourceTree = "<group>"; };
+		9225BBEA8F0D54337AFE2753 /* AIProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AIProtocolTests.swift; path = AIProtocolTests.swift; sourceTree = "<group>"; };
+		B4837DF2642338FC9C826AF4 /* AssistantErrorMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AssistantErrorMapperTests.swift; path = AssistantErrorMapperTests.swift; sourceTree = "<group>"; };
+		1503E7FA322912E300311B10 /* AssistantStateMachineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AssistantStateMachineTests.swift; path = AssistantStateMachineTests.swift; sourceTree = "<group>"; };
+		46B5A0F49ABD22EE19DE3B4A /* ContextManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContextManagerTests.swift; path = ContextManagerTests.swift; sourceTree = "<group>"; };
+		BC6D2B1F44051855EE9E9049 /* ConversationEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ConversationEngineTests.swift; path = ConversationEngineTests.swift; sourceTree = "<group>"; };
+		3AC8DD84864D1CFBF096EAB2 /* EnvironmentConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EnvironmentConfigTests.swift; path = EnvironmentConfigTests.swift; sourceTree = "<group>"; };
+		E0D1EEAE0DB6F62A2658338D /* FastCommandRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FastCommandRouterTests.swift; path = FastCommandRouterTests.swift; sourceTree = "<group>"; };
+		386358CE14C2EB09E69495EC /* MemoryModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MemoryModelTests.swift; path = MemoryModelTests.swift; sourceTree = "<group>"; };
+		31CF040B445F13E2C427C42B /* MemoryRoundTripTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MemoryRoundTripTests.swift; path = MemoryRoundTripTests.swift; sourceTree = "<group>"; };
+		5D9BBEB54A5F4C8DF9F9262E /* NetworkErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NetworkErrorTests.swift; path = NetworkErrorTests.swift; sourceTree = "<group>"; };
+		0FEF2935BF507D807E7E593B /* ReconnectPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ReconnectPolicyTests.swift; path = ReconnectPolicyTests.swift; sourceTree = "<group>"; };
+		7D19263E3E52B218F2F7880F /* RequestTimingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RequestTimingTests.swift; path = RequestTimingTests.swift; sourceTree = "<group>"; };
+		532F068D53489ED2AE435258 /* SettingsPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SettingsPersistenceTests.swift; path = SettingsPersistenceTests.swift; sourceTree = "<group>"; };
+		D514145EDEF6E0906EF8AE68 /* SettingsStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SettingsStoreTests.swift; path = SettingsStoreTests.swift; sourceTree = "<group>"; };
+		4EC5949FF7D4E5AC7947A151 /* TaskModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TaskModelTests.swift; path = TaskModelTests.swift; sourceTree = "<group>"; };
+		4B954263F73EA917A8C89BDB /* ToolRoundTripTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ToolRoundTripTests.swift; path = ToolRoundTripTests.swift; sourceTree = "<group>"; };
+		B4C79F13A13F732A8B4CB198 /* VoiceStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VoiceStateTests.swift; path = VoiceStateTests.swift; sourceTree = "<group>"; };
+		F2C5B33075AEB8DD4A529EF8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
+		5B15DB5AF2A709DD87F02198 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Assets.xcassets; sourceTree = "<group>"; };
+		FBBEF4C78CF48650F02E7541 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
+		C78C5B18D7576691B6C910C2 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		B80D04D542DD80243BB8EF23 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		FEB90630FC17D67B2671FF2D /* ZYRAXIS-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZYRAXIS-iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7AB7FA9392BD863781156333 /* ZYRAXISTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ZYRAXISTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F001BC2AF9EB5498B3360756 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D6B208DB47DA230159E08E40 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		ADCF10F76EBF2A74473E9DC4 /* ZYRAXIS-iOS */ = {
+			isa = PBXGroup;
+			children = (
+				08C7226146FA0E997DE5F530 /* ZYRAXIS */,
+				A36CEF37B7B0081A82808463 /* ZYRAXISTests */,
+				5619E268CFFE28118C19FC6A /* Config */,
+				2D17C89EB2C5B87E8B0EC3B6 /* Frameworks */,
+				5151B46607EBC8890D8DFCC2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		08C7226146FA0E997DE5F530 /* ZYRAXIS */ = {
+			isa = PBXGroup;
+			children = (
+				E6D41EE2FE4AD0920ED3D516 /* App */,
+				3BCDD8D0191CD4112D3545DA /* Core */,
+				2387958C1F06BF358E1F59FF /* AI */,
+				C2CCC0C35CA68E4CE60891DC /* Voice */,
+				E1289BDF58659577A0AF79FE /* Vision */,
+				C1B1C64EF67F7A4158BC1832 /* Networking */,
+				DF0DC86537D31A6BD9A32502 /* Memory */,
+				57A042BEBCC40E4FDB8C6649 /* Tasks */,
+				26335DA07992AF022B42F07B /* Tools */,
+				0FD60532DBA8B2106FB021F3 /* Models */,
+				30F2C2EA9886FF0BF50E966C /* Services */,
+				30B30B1C078A194DBBAD8DC0 /* Security */,
+				F884294F4577751562F6F3A1 /* UI */,
+				4F38930979C0244B557AEE69 /* Components */,
+				CB94505789953FBAD1C5D145 /* Theme */,
+				15DE86E3EFDB8DA671EDF3BD /* Resources */,
+			);
+			name = ZYRAXIS;
+			path = ZYRAXIS;
+			sourceTree = "<group>";
+		};
+		E6D41EE2FE4AD0920ED3D516 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B16F125D78B14CC56B155B5A /* AppConfig.swift */,
+				065F508CEF1AC8E1363C9CC0 /* AppDependencies.swift */,
+				FCAE764EF95395ED1D73146A /* ZYRAXISApp.swift */,
+			);
+			name = App;
+			path = App;
+			sourceTree = "<group>";
+		};
+		3BCDD8D0191CD4112D3545DA /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				D567148D931FFE400C248B13 /* AppError.swift */,
+				B7B7EB6FABED3DE5F205D62B /* AssistantState.swift */,
+				5DF8FA6D699E38449F1B556A /* AssistantStateMachine.swift */,
+				C6F79F1CC13B92BA3963FD60 /* Diagnostics.swift */,
+				4C9DD9597F8C566FE5396B8C /* ZyraxisLogger.swift */,
+			);
+			name = Core;
+			path = Core;
+			sourceTree = "<group>";
+		};
+		2387958C1F06BF358E1F59FF /* AI */ = {
+			isa = PBXGroup;
+			children = (
+				0591188F9CB1F2CEDEE6366B /* AIRequest.swift */,
+				B7056D313C03D9BC58114F83 /* AIService.swift */,
+				6E9865A7D1D7656BC6C06888 /* AIStreamEvent.swift */,
+				CDEB7D29F4E0B139F297ACDF /* AssistantErrorMapper.swift */,
+				BB16E523B60132C31CF58A89 /* BackendAIService.swift */,
+				43F8DE449B476F7326932D50 /* ContextManager.swift */,
+				6F08D960AF14A52BF07D7CAB /* ConversationManager.swift */,
+				979807E57D1A9282DDE5B312 /* FastCommandRouter.swift */,
+				D9292A3E9664162481D38203 /* MockAIService.swift */,
+			);
+			name = AI;
+			path = AI;
+			sourceTree = "<group>";
+		};
+		C2CCC0C35CA68E4CE60891DC /* Voice */ = {
+			isa = PBXGroup;
+			children = (
+				BA11087E20BD82BB2CD9E627 /* AppleSpeechTranscriber.swift */,
+				CF39B28537CF2FDB382B2554 /* AVSpeechService.swift */,
+				519EDC8C15B8AB8708B1DD29 /* SpeechService.swift */,
+				50544F9D4713AC9B352BF8A3 /* STTProvider.swift */,
+				A00E8081D7E7758B796F7B70 /* VoiceManager.swift */,
+				D328DB47CBD9522D72F25743 /* VoiceState.swift */,
+			);
+			name = Voice;
+			path = Voice;
+			sourceTree = "<group>";
+		};
+		E1289BDF58659577A0AF79FE /* Vision */ = {
+			isa = PBXGroup;
+			children = (
+				99AF60432D1978FBF72DC847 /* VisionService.swift */,
+			);
+			name = Vision;
+			path = Vision;
+			sourceTree = "<group>";
+		};
+		C1B1C64EF67F7A4158BC1832 /* Networking */ = {
+			isa = PBXGroup;
+			children = (
+				603E448C8ABCFF11A1A402AE /* APIClient.swift */,
+				B7356FD5685EFCF06159A528 /* BackendConfig.swift */,
+				787C43EC54735AE91CBFF560 /* BackendProtocol.swift */,
+				E0DB19F2FB346417AF9B1193 /* ConnectionState.swift */,
+				1BD760087231D537D185FF49 /* NetworkError.swift */,
+				21691CC9B91A489B6221E914 /* ReconnectPolicy.swift */,
+				679CBF20B5DEDEC5D0A14FCB /* WebSocketManager.swift */,
+			);
+			name = Networking;
+			path = Networking;
+			sourceTree = "<group>";
+		};
+		DF0DC86537D31A6BD9A32502 /* Memory */ = {
+			isa = PBXGroup;
+			children = (
+				68B8E0B3541817DFB4A53FBA /* InMemoryMemoryService.swift */,
+				E5C52EE3586B4B1AF69D5808 /* MemoryItem.swift */,
+				36E8F92D9091BEAEB7B06E0B /* MemoryService.swift */,
+			);
+			name = Memory;
+			path = Memory;
+			sourceTree = "<group>";
+		};
+		57A042BEBCC40E4FDB8C6649 /* Tasks */ = {
+			isa = PBXGroup;
+			children = (
+				863B8020760D82CB58F296E5 /* LocalTaskService.swift */,
+				8A3812F79D0F31435BFECD0E /* TaskService.swift */,
+				1DA606ECCF1F8D6FE1F1E951 /* ZyraxisTask.swift */,
+			);
+			name = Tasks;
+			path = Tasks;
+			sourceTree = "<group>";
+		};
+		26335DA07992AF022B42F07B /* Tools */ = {
+			isa = PBXGroup;
+			children = (
+				2BEE9584661F1F8495D6B67B /* AppInfoTool.swift */,
+				48D60C0B6FBA1A0FA14ED7EF /* ToolRegistry.swift */,
+			);
+			name = Tools;
+			path = Tools;
+			sourceTree = "<group>";
+		};
+		0FD60532DBA8B2106FB021F3 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				392FD4DF1E9DB7082F22224E /* AssistantActivity.swift */,
+				50AD0C80A3B3B27BCFC5101B /* ConversationMessage.swift */,
+			);
+			name = Models;
+			path = Models;
+			sourceTree = "<group>";
+		};
+		30F2C2EA9886FF0BF50E966C /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				217AAB731D3EE54071866587 /* NotificationService.swift */,
+				FD6F427326BEC061AC6F12BF /* SettingsStore.swift */,
+			);
+			name = Services;
+			path = Services;
+			sourceTree = "<group>";
+		};
+		30B30B1C078A194DBBAD8DC0 /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				08FD62D2538738693607607B /* KeychainService.swift */,
+			);
+			name = Security;
+			path = Security;
+			sourceTree = "<group>";
+		};
+		F884294F4577751562F6F3A1 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				2195AA86F1BD369A76267CC5 /* CommandInputBar.swift */,
+				82FD8668F3A9494C50BCE8FA /* ConversationTranscriptView.swift */,
+				658248B75423870323178154 /* MainAssistantView.swift */,
+				902A16264C26BA0A2A6017A7 /* SettingsView.swift */,
+			);
+			name = UI;
+			path = UI;
+			sourceTree = "<group>";
+		};
+		4F38930979C0244B557AEE69 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				89DCD0EF22806E68FEAB8A3F /* ActivityRow.swift */,
+				F8DE0EB4B1875BFECF0D49D9 /* ConnectionBadge.swift */,
+				C1B3A9B619707D3E7D6C3703 /* GlassPanel.swift */,
+				1D568ABA4826DB1921EE0A7D /* MicButton.swift */,
+				E968CC1B5D6B47F41245A826 /* ZyraxisCoreView.swift */,
+			);
+			name = Components;
+			path = Components;
+			sourceTree = "<group>";
+		};
+		CB94505789953FBAD1C5D145 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				97552BC2B0A38CBA7DBD7D5B /* ZyraxisTheme.swift */,
+			);
+			name = Theme;
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		15DE86E3EFDB8DA671EDF3BD /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				F2C5B33075AEB8DD4A529EF8 /* Info.plist */,
+				5B15DB5AF2A709DD87F02198 /* Assets.xcassets */,
+			);
+			name = Resources;
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A36CEF37B7B0081A82808463 /* ZYRAXISTests */ = {
+			isa = PBXGroup;
+			children = (
+				9225BBEA8F0D54337AFE2753 /* AIProtocolTests.swift */,
+				B4837DF2642338FC9C826AF4 /* AssistantErrorMapperTests.swift */,
+				1503E7FA322912E300311B10 /* AssistantStateMachineTests.swift */,
+				46B5A0F49ABD22EE19DE3B4A /* ContextManagerTests.swift */,
+				BC6D2B1F44051855EE9E9049 /* ConversationEngineTests.swift */,
+				3AC8DD84864D1CFBF096EAB2 /* EnvironmentConfigTests.swift */,
+				E0D1EEAE0DB6F62A2658338D /* FastCommandRouterTests.swift */,
+				386358CE14C2EB09E69495EC /* MemoryModelTests.swift */,
+				31CF040B445F13E2C427C42B /* MemoryRoundTripTests.swift */,
+				5D9BBEB54A5F4C8DF9F9262E /* NetworkErrorTests.swift */,
+				0FEF2935BF507D807E7E593B /* ReconnectPolicyTests.swift */,
+				7D19263E3E52B218F2F7880F /* RequestTimingTests.swift */,
+				532F068D53489ED2AE435258 /* SettingsPersistenceTests.swift */,
+				D514145EDEF6E0906EF8AE68 /* SettingsStoreTests.swift */,
+				4EC5949FF7D4E5AC7947A151 /* TaskModelTests.swift */,
+				4B954263F73EA917A8C89BDB /* ToolRoundTripTests.swift */,
+				B4C79F13A13F732A8B4CB198 /* VoiceStateTests.swift */,
+			);
+			name = ZYRAXISTests;
+			path = ZYRAXISTests;
+			sourceTree = "<group>";
+		};
+		5619E268CFFE28118C19FC6A /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				FBBEF4C78CF48650F02E7541 /* Shared.xcconfig */,
+				C78C5B18D7576691B6C910C2 /* Debug.xcconfig */,
+				B80D04D542DD80243BB8EF23 /* Release.xcconfig */,
+			);
+			name = Config;
+			path = Config;
+			sourceTree = "<group>";
+		};
+		2D17C89EB2C5B87E8B0EC3B6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		5151B46607EBC8890D8DFCC2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FEB90630FC17D67B2671FF2D /* ZYRAXIS-iOS.app */,
+				7AB7FA9392BD863781156333 /* ZYRAXISTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		37C951B845BEE1A416BC46E9 /* ZYRAXIS-iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 23746EFE221170E24101FE05 /* Build configuration list for PBXNativeTarget "ZYRAXIS-iOS" */;
+			buildPhases = (
+				8682261519D15BD64A9E5D31 /* Sources */,
+				F001BC2AF9EB5498B3360756 /* Frameworks */,
+				E28FAD8F60ECDED9B4AD087A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ZYRAXIS-iOS;
+			productName = ZYRAXIS-iOS;
+			productReference = FEB90630FC17D67B2671FF2D /* ZYRAXIS-iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		5134CE2FB4EC55BC3F839D4E /* ZYRAXISTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 48751F087EE6031B0313610C /* Build configuration list for PBXNativeTarget "ZYRAXISTests" */;
+			buildPhases = (
+				29BEEA3D856852A8CC3247ED /* Sources */,
+				D6B208DB47DA230159E08E40 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				32102749F254C28782DC9BF5 /* PBXTargetDependency */,
+			);
+			name = ZYRAXISTests;
+			productName = ZYRAXISTests;
+			productReference = 7AB7FA9392BD863781156333 /* ZYRAXISTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B25CF16007ABAFF9D21D5A6C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = 3D29D9F3A882C4202964FB56 /* Build configuration list for PBXProject "ZYRAXIS-iOS" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = ADCF10F76EBF2A74473E9DC4;
+			productRefGroup = 5151B46607EBC8890D8DFCC2 /* Products */;
+			projectDirPath = "";
+			targets = (
+				37C951B845BEE1A416BC46E9 /* ZYRAXIS-iOS */,
+				5134CE2FB4EC55BC3F839D4E /* ZYRAXISTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E28FAD8F60ECDED9B4AD087A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				415CD76F61CD7005D4F3337C /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8682261519D15BD64A9E5D31 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C143DA0D72224D270A12D467 /* AppConfig.swift in Sources */,
+				EB5492528BE048CE967A9055 /* AppDependencies.swift in Sources */,
+				697AA7F4219F1007BD07DDD3 /* ZYRAXISApp.swift in Sources */,
+				927D2D1D6CDA9F2BBAD8298F /* AppError.swift in Sources */,
+				A6E76524A7BB96403EB2A402 /* AssistantState.swift in Sources */,
+				9952DE0D76A25D84432DEAED /* AssistantStateMachine.swift in Sources */,
+				5057187F9E557E461C7753A6 /* Diagnostics.swift in Sources */,
+				6C715810FC227CC166030DC9 /* ZyraxisLogger.swift in Sources */,
+				4F9BCEAEB4E6C274E82AE2CB /* AIRequest.swift in Sources */,
+				12F1433D5C8F397704F46C22 /* AIService.swift in Sources */,
+				D90BA52F4A516C893341975F /* AIStreamEvent.swift in Sources */,
+				C98A6CEFE6ECD9EDD7202F2E /* AssistantErrorMapper.swift in Sources */,
+				ADA9CA0122E8E709F24C336F /* BackendAIService.swift in Sources */,
+				6A35FAF46D851527BC34EE06 /* ContextManager.swift in Sources */,
+				27D2CA3ECE263AD4EB1203CF /* ConversationManager.swift in Sources */,
+				24433C154AB3AE55459147AE /* FastCommandRouter.swift in Sources */,
+				97CBAD736BD9F9762F83D2EB /* MockAIService.swift in Sources */,
+				6E2E620AA61B2D980E8FB205 /* AppleSpeechTranscriber.swift in Sources */,
+				A189C51346589A4A9BBC47D5 /* AVSpeechService.swift in Sources */,
+				52EC5E57A82C02E8D95BED9A /* SpeechService.swift in Sources */,
+				C6A51868B932CEE5A638BEF4 /* STTProvider.swift in Sources */,
+				D5BCA71E15BA1A6066EF4B00 /* VoiceManager.swift in Sources */,
+				2687C85E02510B32C767E0D2 /* VoiceState.swift in Sources */,
+				9B0ECFE2C7F0A7A981F95BAC /* VisionService.swift in Sources */,
+				1159ADA755DFAE70D7FF96C4 /* APIClient.swift in Sources */,
+				8EB9DA66F0712203678CBC9B /* BackendConfig.swift in Sources */,
+				EA424E7EF6AFE5923AC69B1D /* BackendProtocol.swift in Sources */,
+				4E9D6288FF38E31842AEF332 /* ConnectionState.swift in Sources */,
+				07C0E6CA6FF31A270E7FFF63 /* NetworkError.swift in Sources */,
+				7263414C2C613B67C360D83D /* ReconnectPolicy.swift in Sources */,
+				7DFE67C83D23DFC02AD94EBE /* WebSocketManager.swift in Sources */,
+				5B6BC7217D779C38F78A1BD6 /* InMemoryMemoryService.swift in Sources */,
+				050569859778068F2F322123 /* MemoryItem.swift in Sources */,
+				FDF1149E3470EEF26D1B3A0B /* MemoryService.swift in Sources */,
+				C7A7A63041F457BE8D8B11A0 /* LocalTaskService.swift in Sources */,
+				6563A9BBF5EE8A747BDFD920 /* TaskService.swift in Sources */,
+				24E60976CA38517C9615C5D3 /* ZyraxisTask.swift in Sources */,
+				60000EBE54BAB2A27047A662 /* AppInfoTool.swift in Sources */,
+				AA75FC882900C201DE23DF5C /* ToolRegistry.swift in Sources */,
+				F67DE84C3D88AABBD4BA29AE /* AssistantActivity.swift in Sources */,
+				26FD20B0C9F3E6BEAA9088C6 /* ConversationMessage.swift in Sources */,
+				C1E6209BD54C3C276DA7CF1F /* NotificationService.swift in Sources */,
+				0BF2C77275CD25E6667AF9A1 /* SettingsStore.swift in Sources */,
+				EF3A9F6C405AC393BBB5EABC /* KeychainService.swift in Sources */,
+				A83CBC0163BBBF15F638B718 /* CommandInputBar.swift in Sources */,
+				58E2610CEBBEDE553DB4A689 /* ConversationTranscriptView.swift in Sources */,
+				2DB6073C6D23E34F50703A89 /* MainAssistantView.swift in Sources */,
+				F593D79545D42D8E1279F6FE /* SettingsView.swift in Sources */,
+				EBC467350862B8955170F09E /* ActivityRow.swift in Sources */,
+				5642EFC286FCEE4033693F90 /* ConnectionBadge.swift in Sources */,
+				75C0B4291BB4BBEAED578307 /* GlassPanel.swift in Sources */,
+				5A094C9C961EBE824BDFB4B1 /* MicButton.swift in Sources */,
+				88B1D999CF8D27431A7E6205 /* ZyraxisCoreView.swift in Sources */,
+				5040BE2D57D0DAF116A37ABA /* ZyraxisTheme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		29BEEA3D856852A8CC3247ED /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6553B49DAA400D50D392B0D4 /* AIProtocolTests.swift in Sources */,
+				39C39151FA1F6E0D82165535 /* AssistantErrorMapperTests.swift in Sources */,
+				5170FFCBEC183FAA7E9A1CE2 /* AssistantStateMachineTests.swift in Sources */,
+				082844A866BCBAC92B94CE7C /* ContextManagerTests.swift in Sources */,
+				63666B3A0B81C540D02D054C /* ConversationEngineTests.swift in Sources */,
+				EA923E282F4C8165B67852D6 /* EnvironmentConfigTests.swift in Sources */,
+				C3F720C7EED5361C1222E676 /* FastCommandRouterTests.swift in Sources */,
+				FA63724E029DA7E4F3E21DD4 /* MemoryModelTests.swift in Sources */,
+				7312CC97CA0B795DA38CC5BD /* MemoryRoundTripTests.swift in Sources */,
+				9E58A784268E4C44C8397206 /* NetworkErrorTests.swift in Sources */,
+				B10F7FE6583E1338E1254CE2 /* ReconnectPolicyTests.swift in Sources */,
+				25BC6C16C01517C7E8E39C10 /* RequestTimingTests.swift in Sources */,
+				2A4CFE0944AEAE0FFEED8677 /* SettingsPersistenceTests.swift in Sources */,
+				730C562859C3D8EE70BE387F /* SettingsStoreTests.swift in Sources */,
+				3C54C13C1EABBE7F59541519 /* TaskModelTests.swift in Sources */,
+				09FED6CD68D9D877E74FC777 /* ToolRoundTripTests.swift in Sources */,
+				4D2F1C49F9B8AA058A6C5E46 /* VoiceStateTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		32102749F254C28782DC9BF5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 37C951B845BEE1A416BC46E9 /* ZYRAXIS-iOS */;
+			targetProxy = CFF756ADBE002CAE776E0010 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		CFF756ADBE002CAE776E0010 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B25CF16007ABAFF9D21D5A6C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 37C951B845BEE1A416BC46E9;
+			remoteInfo = ZYRAXIS-iOS;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin XCBuildConfiguration section */
+		855D4B0C75ECD556474FD8F5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = FBBEF4C78CF48650F02E7541;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		4E74312DBBD620AE1CB5D771 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = FBBEF4C78CF48650F02E7541;
+			buildSettings = {
+			};
+			name = Release;
+		};
+		967DE5DAE8F9C3546488D3FD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C78C5B18D7576691B6C910C2;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ZYRAXIS/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.zyraxis.assistant;
+				PRODUCT_MODULE_NAME = ZYRAXIS;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		70A5F3AAC43D0790B57ED51A /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B80D04D542DD80243BB8EF23;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ZYRAXIS/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.zyraxis.assistant;
+				PRODUCT_MODULE_NAME = ZYRAXIS;
+				SDKROOT = iphoneos;
+			};
+			name = Release;
+		};
+		616BE68C55EDB13288068B2F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C78C5B18D7576691B6C910C2;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.zyraxis.assistant.tests;
+				SDKROOT = iphoneos;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ZYRAXIS-iOS.app/ZYRAXIS-iOS";
+			};
+			name = Debug;
+		};
+		E78E6D81968C56020FDC7FF2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B80D04D542DD80243BB8EF23;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.zyraxis.assistant.tests;
+				SDKROOT = iphoneos;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ZYRAXIS-iOS.app/ZYRAXIS-iOS";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3D29D9F3A882C4202964FB56 /* Build configuration list for PBXProject "ZYRAXIS-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				855D4B0C75ECD556474FD8F5 /* Debug */,
+				4E74312DBBD620AE1CB5D771 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		23746EFE221170E24101FE05 /* Build configuration list for PBXNativeTarget "ZYRAXIS-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				967DE5DAE8F9C3546488D3FD /* Debug */,
+				70A5F3AAC43D0790B57ED51A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		48751F087EE6031B0313610C /* Build configuration list for PBXNativeTarget "ZYRAXISTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				616BE68C55EDB13288068B2F /* Debug */,
+				E78E6D81968C56020FDC7FF2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+
+	rootObject = B25CF16007ABAFF9D21D5A6C /* Project object */;
+}

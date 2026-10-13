@@ -1,0 +1,14 @@
+// Shared.xcconfig — project-wide, NON-SECRET build settings.
+// Included by Debug.xcconfig and Release.xcconfig, referenced as the base
+// configuration of every target configuration in project.pbxproj.
+//
+// NEVER put secrets here: no API keys, tokens, passwords, Apple credentials,
+// certificates, or provisioning data. Backend credentials live in Keychain
+// at runtime; the endpoint itself is chosen in Settings (Dev/Staging/Prod).
+IPHONEOS_DEPLOYMENT_TARGET = 17.0
+SWIFT_VERSION = 5.0
+TARGETED_DEVICE_FAMILY = 1
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM =
+MARKETING_VERSION = 0.5.0
+CURRENT_PROJECT_VERSION = 1
