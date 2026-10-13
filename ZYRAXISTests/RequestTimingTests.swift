@@ -19,7 +19,7 @@ final class RequestTimingTests: XCTestCase {
         )
     }
 
-    func testTimingRecordedOnCompletion() async {
+    func testTimingRecordedOnCompletion() async throws {
         let scripted = ScriptedAIService()
         scripted.builder = { id in
             [.thinking(requestId: id),
