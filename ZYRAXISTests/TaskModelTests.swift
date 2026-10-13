@@ -3,6 +3,18 @@ import XCTest
 
 final class TaskModelTests: XCTestCase {
 
+    override func setUp() {
+        super.setUp()
+        // Each test gets a virgin task store: LocalTaskService persists to
+        // UserDefaults.standard on every mutation and reloads it in init, so
+        // without this, tasks completed/cancelled by earlier tests (XCTest runs
+        // alphabetically) leak into later ones and count-sensitive assertions
+        // (e.g. testListFilters expecting exactly 1 completed) flake.
+        // Key must match LocalTaskService's storage key; drift self-detects as
+        // a count mismatch, never a silent pass.
+        UserDefaults.standard.removeObject(forKey: "zyraxis.tasks.v1")
+    }
+
     func testActiveByDefault() {
         let t = ZyraxisTask(title: "Test")
         XCTAssertTrue(t.isActive)
