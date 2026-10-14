@@ -59,8 +59,12 @@ public final class ConversationManager: ObservableObject {
         fastRouter: FastCommandRouter = FastCommandRouter(),
         mockService: any AIService,
         backendService: any AIService,
-        geminiService: GeminiDirectService = GeminiDirectService(),
-        groqService: GroqDirectService = GroqDirectService()
+        // Optional so existing call sites compile unchanged; nil resolves to
+        // a default instance below. Default-argument expressions are
+        // nonisolated, so `= GeminiDirectService()` here would not compile
+        // (MainActor-isolated init called from a nonisolated context).
+        geminiService: GeminiDirectService? = nil,
+        groqService: GroqDirectService? = nil
     ) {
         self.stateMachine = stateMachine
         self.settings = settings
@@ -70,8 +74,8 @@ public final class ConversationManager: ObservableObject {
         self.fastRouter = fastRouter
         self.mockService = mockService
         self.backendService = backendService
-        self.geminiService = geminiService
-        self.groqService = groqService
+        self.geminiService = geminiService ?? GeminiDirectService()
+        self.groqService = groqService ?? GroqDirectService()
     }
 
     // MARK: - Service resolution

@@ -63,8 +63,10 @@ public final class AppDependencies: ObservableObject {
         webSocket: URLSessionWebSocketManager,
         mockService: any AIService,
         backendService: BackendAIService,
-        geminiService: GeminiDirectService = GeminiDirectService(),
-        groqService: GroqDirectService = GroqDirectService(),
+        // Optional with in-body fallback for the same isolation reason as in
+        // ConversationManager: default-argument expressions are nonisolated.
+        geminiService: GeminiDirectService? = nil,
+        groqService: GroqDirectService? = nil,
         voiceManager: VoiceManagerImpl,
         memoryService: any MemoryService,
         taskService: any TaskService,
@@ -80,8 +82,8 @@ public final class AppDependencies: ObservableObject {
         self.webSocket = webSocket
         self.mockService = mockService
         self.backendService = backendService
-        self.geminiService = geminiService
-        self.groqService = groqService
+        self.geminiService = geminiService ?? GeminiDirectService()
+        self.groqService = groqService ?? GroqDirectService()
         self.voiceManager = voiceManager
         self.memoryService = memoryService
         self.taskService = taskService
