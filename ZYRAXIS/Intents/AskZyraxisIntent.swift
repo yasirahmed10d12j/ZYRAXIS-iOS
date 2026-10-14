@@ -36,7 +36,7 @@ struct ZyraxisShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: AskZyraxisIntent(),
-            phrases: ["Ask \(.applicationName) \(.query)"],
+            phrases: ["Ask \(.applicationName)", "Ask ZYRAXIS"],
             shortTitle: "Ask ZYRAXIS",
             systemImageName: "message"
         )
@@ -100,7 +100,7 @@ private struct ZyraxisShortcutRunner {
             let response = try await service.sendMessage(request)
             return response.text.isEmpty ? "Gemini returned no usable text." : response.text
         } catch {
-            return fallbackToGroq(text, geminiFailedWith: error)
+            return await fallbackToGroq(text, geminiFailedWith: error)
         }
     }
 
