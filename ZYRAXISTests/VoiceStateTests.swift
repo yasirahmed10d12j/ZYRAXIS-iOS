@@ -76,8 +76,10 @@ final class VoiceStateTests: XCTestCase {
         // Speech arms it; a short pause does not end the utterance yet.
         XCTAssertNil(detector.ingest(level: 0.5, at: start.addingTimeInterval(31)))
         XCTAssertNil(detector.ingest(level: 0.01, at: start.addingTimeInterval(31.5)))
-        // Sustained quiet past the threshold ends the utterance exactly once.
-        XCTAssertEqual(detector.ingest(level: 0.01, at: start.addingTimeInterval(32.5)), .utteranceEnded)
+        // Sustained quiet past the threshold ends the utterance exactly once
+        // (silence runs 31.5 -> 32.8 = 1.3s against the 1.2s threshold).
+        XCTAssertNil(detector.ingest(level: 0.01, at: start.addingTimeInterval(32.5)))
+        XCTAssertEqual(detector.ingest(level: 0.01, at: start.addingTimeInterval(32.8)), .utteranceEnded)
         XCTAssertNil(detector.ingest(level: 0.01, at: start.addingTimeInterval(34)))
     }
 
