@@ -368,7 +368,7 @@ final class DirectProviderTests: XCTestCase {
         }
         // connected, thinking, 2 deltas, completed.
         XCTAssertEqual(events.count, 5)
-        guard case .completed(_, let response) = events.last else {
+        guard case .completed(_, let response)? = events.last else {
             return XCTFail("expected completed last, got \(events)")
         }
         XCTAssertEqual(response.text, "Hello")
@@ -445,7 +445,7 @@ final class DirectProviderTests: XCTestCase {
         for try await event in svc.streamMessage(Self.request()) {
             events.append(event)
         }
-        guard case .completed(_, let response) = events.last else {
+        guard case .completed(_, let response)? = events.last else {
             return XCTFail("expected completed last, got \(events)")
         }
         XCTAssertEqual(response.text, "Hi")
