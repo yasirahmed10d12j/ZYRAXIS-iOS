@@ -269,4 +269,54 @@ final class ConversationEngineTests: XCTestCase {
         XCTAssertEqual(opened[0].url.absoluteString, "https://www.youtube.com/")
         XCTAssertFalse(opened[0].url.absoluteString.hasPrefix("youtube://"))
     }
+
+    func testCallContactResolvesThroughDirectory() async {
+        let (manager, scripted, _, _) = makeManager()
+        let directory = SpyContactService()
+        directory.numbersByName = ["mom": "15551234567"]
+        manager.contactService = directory
+        var opened: [OpenRequest] = []
+        manager.openURLHandler = { opened.append($0) }
+        await manager.send("call mom")
+        XCTAssertEqual(scripted.callCount, 0, "contact commands must not call the AI service")
+        XCTAssertTrue(directory.requestedPermission)
+        XCTAssertEqual(opened.count, 1)
+        XCTAssertEqual(opened[0].url.absoluteString, "tel:15551234567")
+        XCTAssertTrue(manager.activities.contains(where: { $0.title.contains("Opening") }))
+    }
+
+    func testCallContactUnknownNameReportsError() async {
+        let (manager, scripted, _, _) = makeManager()
+        let directory = SpyContactService()
+        manager.contactService = directory
+        var opened: [OpenRequest] = []
+        manager.openURLHandler = { opened.append($0) }
+        await manager.send("call nobody here")
+        XCTAssertEqual(scripted.callCount, 0)
+        XCTAssertTrue(opened.isEmpty)
+        XCTAssertTrue(manager.activities.contains(where: { $0.title.contains("Couldn't find") }))
+    }
+
+    func testHandsFreeRelistensAfterVoiceTurn() async {
+        let (manager, scripted, _, settings) = makeManager { id in
+            [.completed(requestId: id, response: AIResponse(text: "hi", requestId: id))]
+        }
+        settings.handsFreeMode = true
+        var relistens = 0
+        manager.autoListenHandler = { relistens += 1 }
+        await manager.acceptExternalTranscript("hello", isFinal: true)
+        XCTAssertEqual(scripted.callCount, 1)
+        XCTAssertEqual(relistens, 1, "voice turn completion must re-arm the mic once")
+    }
+
+    func testTypedTurnDoesNotRelisten() async {
+        let (manager, _, _, settings) = makeManager { id in
+            [.completed(requestId: id, response: AIResponse(text: "hi", requestId: id))]
+        }
+        settings.handsFreeMode = true
+        var relistens = 0
+        manager.autoListenHandler = { relistens += 1 }
+        await manager.send("typed, not spoken")
+        XCTAssertEqual(relistens, 0, "typed turns must never reopen the mic")
+    }
 }

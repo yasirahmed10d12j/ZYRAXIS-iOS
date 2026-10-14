@@ -16,10 +16,15 @@ import Combine
 public struct MainAssistantView: View {
 
     @EnvironmentObject private var deps: AppDependencies
+    @Environment(\.scenePhase) private var scenePhase
     @State private var inputText: String = ""
     @State private var micLevel: Float = 0
     @State private var showingSettings = false
     @State private var sendTask: Task<Void, Never>?
+    // Background grace task (~30s): lets an in-flight reply finish after the
+    // app backgrounds. iOS still suspends the app afterwards — this is NOT
+    // continuous background listening (impossible for third-party apps).
+    @State private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
 
     public init() {}
 
@@ -124,6 +129,23 @@ public struct MainAssistantView: View {
                         ))
                     }
                 }
+            }
+            deps.conversation.autoListenHandler = { [weak deps] in
+                guard let deps else { return }
+                Task { @MainActor [weak deps] in
+                    guard let deps else { return }
+                    await Self.startMic(deps)
+                }
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background:
+                beginBackgroundGrace()
+            case .active:
+                endBackgroundGrace()
+            default:
+                break
             }
         }
         .onReceive(deps.voiceManager.voiceStatePublisher) { vs in
@@ -308,6 +330,26 @@ public struct MainAssistantView: View {
         deps.pushActivity(.init(kind: .listening, title: "Mic closed"))
     }
 
+    /// Background grace: if a reply is streaming or the mic is capturing when
+    /// the app backgrounds, ask iOS for ~30s to finish the in-flight turn.
+    /// This does NOT keep the app alive: iOS suspends third-party apps and
+    /// cuts the mic regardless — continuous background listening is
+    /// impossible on stock iOS and is not attempted here.
+    private func beginBackgroundGrace() {
+        guard backgroundTask == .invalid else { return }
+        guard deps.conversation.isStreaming || deps.voiceManager.voiceState.isCapturing else { return }
+        backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "zyraxis-finish-turn") {
+            ZyraxisLogger.log(.voice, "background grace expired")
+        }
+    }
+
+    private func endBackgroundGrace() {
+        if backgroundTask != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+            backgroundTask = .invalid
+        }
+    }
+
     private static func startMic(_ deps: AppDependencies) async {
         // Permission + capture are real; live transcription is opt-in.
         let perm = await deps.voiceManager.requestPermission()
@@ -315,6 +357,7 @@ public struct MainAssistantView: View {
             deps.stateMachine.fail(with: .voice("Microphone permission denied. Enable it in iOS Settings."))
             return
         }
+        deps.voiceManager.autoStopOnSilence = deps.settings.handsFreeMode
         do {
             try deps.voiceManager.startListening()
             deps.stateMachine.beginListening()

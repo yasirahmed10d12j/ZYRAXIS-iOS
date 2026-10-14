@@ -66,6 +66,28 @@ final class VoiceStateTests: XCTestCase {
         XCTAssertEqual(spy.lastChannels, 1)
         XCTAssertEqual(spy.lastSampleRate, 44100, accuracy: 0.001)
     }
+
+    func testSilenceDetectorNeedsSpeechFirst() {
+        var detector = SilenceDetector()
+        let start = Date()
+        detector.reset(at: start)
+        // Pure silence with no prior speech never ends anything.
+        XCTAssertNil(detector.ingest(level: 0.01, at: start.addingTimeInterval(30)))
+        // Speech arms it; a short pause does not end the utterance yet.
+        XCTAssertNil(detector.ingest(level: 0.5, at: start.addingTimeInterval(31)))
+        XCTAssertNil(detector.ingest(level: 0.01, at: start.addingTimeInterval(31.5)))
+        // Sustained quiet past the threshold ends the utterance exactly once.
+        XCTAssertEqual(detector.ingest(level: 0.01, at: start.addingTimeInterval(32.5)), .utteranceEnded)
+        XCTAssertNil(detector.ingest(level: 0.01, at: start.addingTimeInterval(34)))
+    }
+
+    func testSilenceDetectorCaptureTimeout() {
+        var detector = SilenceDetector()
+        let start = Date()
+        detector.reset(at: start)
+        XCTAssertNil(detector.ingest(level: 0.5, at: start.addingTimeInterval(10)))
+        XCTAssertEqual(detector.ingest(level: 0.5, at: start.addingTimeInterval(61)), .captureTimedOut)
+    }
 }
 
 /// STT test double: records ingest calls, performs no recognition.

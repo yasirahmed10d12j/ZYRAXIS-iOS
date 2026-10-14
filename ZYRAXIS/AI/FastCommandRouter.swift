@@ -23,6 +23,7 @@ public struct OpenRequest: Equatable, Sendable {
         case facetime
         case appStore
         case youTube
+        case whatsApp
     }
 
     public var url: URL
@@ -93,6 +94,29 @@ public struct OpenRequest: Equatable, Sendable {
         return OpenRequest(url: url, label: "App Store", kind: .appStore)
     }
 
+    /// WhatsApp chat as a universal link (`wa.me/<digits>` — digits only, no
+    /// `+`/spaces). Opens the chat in WhatsApp when installed, else the web
+    /// fallback. The message itself is still typed and sent by the user —
+    /// iOS never sends messages without confirmation.
+    public static func whatsApp(_ rawDigits: String) -> OpenRequest? {
+        let digits = rawDigits.filter { $0.isNumber }
+        guard digits.count >= 7,
+              let url = URL(string: "https://wa.me/\(digits)") else { return nil }
+        return OpenRequest(url: url, label: "WhatsApp chat", kind: .whatsapp)
+    }
+
+    /// Fixed Instagram front page (universal link, no user input).
+    public static func instagram() -> OpenRequest? {
+        guard let url = URL(string: "https://www.instagram.com/") else { return nil }
+        return OpenRequest(url: url, label: "Instagram", kind: .website)
+    }
+
+    /// Fixed WhatsApp front page (universal link, no user input).
+    public static func whatsAppHome() -> OpenRequest? {
+        guard let url = URL(string: "https://www.whatsapp.com/") else { return nil }
+        return OpenRequest(url: url, label: "WhatsApp", kind: .website)
+    }
+
     /// YouTube via HTTPS universal links ONLY — deliberately never the
     /// `youtube://` custom scheme. A universal link opens the YouTube app
     /// when installed and falls back to Safari otherwise, so there is no
@@ -132,6 +156,11 @@ public enum FastCommandAction: Equatable, Sendable {
     /// Open a validated external destination (handled by the UI layer, which
     /// owns UIApplication). Never fabricated: nil validation stays `.none`.
     case open(OpenRequest)
+    /// Call/text/WhatsApp a contact by name (resolved against iOS contacts
+    /// by the engine; unresolvable names report an error, never dial).
+    case callContact(String)
+    case messageContact(String)
+    case whatsAppContact(String)
     case none
 }
 
@@ -172,7 +201,30 @@ public struct FastCommandRouter: Sendable {
         if let open = Self.openRequest(for: norm) {
             return .open(open)
         }
+        // Contact names (digits handled as direct opens above): resolved
+        // against iOS contacts by the engine with honest failure feedback.
+        if let contact = Self.contactAction(for: norm) {
+            return contact
+        }
         return .none
+    }
+
+    /// Contact-name fallback for call/text/whatsapp. Bare verbs yield nil
+    /// (fall through to the AI, as before).
+    static func contactAction(for norm: String) -> FastCommandAction? {
+        if let rest = remainder(after: ["call"], in: norm), !rest.isEmpty {
+            return .callContact(rest)
+        }
+        if let rest = remainder(after: ["text", "message"], in: norm), !rest.isEmpty {
+            return .messageContact(rest)
+        }
+        if let rest = remainder(after: ["whatsapp"], in: norm), !rest.isEmpty {
+            if let direct = OpenRequest.whatsApp(rest) {
+                return .open(direct)
+            }
+            return .whatsAppContact(rest)
+        }
+        return nil
     }
 
     /// Prefix-intent open commands. Specific fixed phrases first, generic
@@ -180,6 +232,12 @@ public struct FastCommandRouter: Sendable {
     static func openRequest(for norm: String) -> OpenRequest? {
         if norm == "open app store" || norm == "app store" {
             return OpenRequest.appStore()
+        }
+        if norm == "instagram" || norm == "open instagram" {
+            return OpenRequest.instagram()
+        }
+        if norm == "whatsapp" || norm == "open whatsapp" {
+            return OpenRequest.whatsAppHome()
         }
         if norm == "youtube" || norm == "open youtube" {
             return OpenRequest.youTubeHome()

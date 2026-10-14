@@ -183,6 +183,7 @@ public struct SettingsView: View {
         Section("Voice & Microphone") {
             Toggle("Voice input enabled", isOn: binding(get: { $0.voiceEnabled }, set: { $0.voiceEnabled = $1 }))
             Toggle("Live transcription (STT)", isOn: binding(get: { $0.liveTranscriptionEnabled }, set: { $0.liveTranscriptionEnabled = $1 }))
+            Toggle("Hands-free loop (auto-send + re-listen)", isOn: binding(get: { $0.handsFreeMode }, set: { $0.handsFreeMode = $1 }))
             Toggle("Voice responses (TTS)", isOn: binding(get: { $0.voiceResponsesEnabled }, set: { $0.voiceResponsesEnabled = $1 }))
             LabeledRow(
                 title: "Microphone state",

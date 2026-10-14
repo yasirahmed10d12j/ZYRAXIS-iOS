@@ -407,6 +407,37 @@ item below is enforced by the code, not assumed:
 6. A phone call, Siri, or alarm stops capture (`MIC STOPPED`) and never
    auto-resumes — tap the mic again. This is deliberate (privacy).
 
+### Hands-free loop (no second tap)
+
+Enable **Hands-free loop** as well: after you speak, the mic closes itself
+on utterance end (~1.2 s of quiet, 60 s safety cap) and the final transcript
+auto-sends — then the mic re-opens after each voice turn. Typed messages
+never re-arm the mic, and pressing Stop ends the loop until the next voice
+turn. Known limits: speaker bleed can self-trigger while replies play;
+re-listening starts the mic even if the previous turn failed (say the
+command again or tap Stop).
+
+### Calling and messaging by name
+
+`call mom`, `text dad`, `whatsapp mom` resolve against iOS contacts
+(first match wins — use the saved full name for shared names). Grant
+**Contacts** when asked; denied or unknown names report an error in the
+activity feed instead of dialling. Digits always work without contacts
+(`call 5551234567`, `whatsapp 15551234567`). SMS/WhatsApp open the composer
+or chat — iOS always requires your tap to actually send. `open instagram`
+and `open whatsapp` open those front pages; any other app name cannot be
+opened (iOS sandbox — see limitations).
+
+### Background reality (iOS-enforced)
+
+Switching apps gives the in-flight reply ~30 s to finish
+(`beginBackgroundTask`), then iOS suspends ZYRAXIS. **Continuous background
+listening is impossible on stock iOS**: the system cuts the mic within half
+a minute of backgrounding and shows the recording indicator while any
+capture runs. The app never runs "until removed from open tabs" — any app
+claiming otherwise on non-jailbroken iOS is misrepresenting. Plan voice
+sessions in the foreground.
+
 ### Open commands (no third-party app access)
 
 Fast commands that open iPhone destinations through Apple-supported schemes

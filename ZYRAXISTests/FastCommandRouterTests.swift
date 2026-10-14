@@ -88,11 +88,46 @@ final class FastCommandRouterTests: XCTestCase {
         } else {
             XCTFail("expected open email")
         }
-        // Unvalidated targets must not open anything.
-        XCTAssertEqual(router.route("call abc"), .none)
-        XCTAssertEqual(router.route("call 123"), .none)
+        // Unvalidated direct targets become contact lookups (resolved with
+        // honest failure feedback), never blind dials.
+        XCTAssertEqual(router.route("call abc"), .callContact("abc"))
+        XCTAssertEqual(router.route("call 123"), .callContact("123"))
         XCTAssertEqual(router.route("email nodomain"), .none)
         XCTAssertEqual(router.route("launch safari"), .none)
+    }
+
+    func testCallTextWhatsAppContactRouting() {
+        XCTAssertEqual(router.route("call mom"), .callContact("mom"))
+        XCTAssertEqual(router.route("text mom"), .messageContact("mom"))
+        XCTAssertEqual(router.route("message dad"), .messageContact("dad"))
+        XCTAssertEqual(router.route("whatsapp mom"), .whatsAppContact("mom"))
+        XCTAssertEqual(router.route("call"), .none)
+        XCTAssertEqual(router.route("text"), .none)
+        // Pure digits still open directly without a contact lookup.
+        if case .open(let req) = router.route("call 5551234567") {
+            XCTAssertEqual(req.kind, .call)
+        } else {
+            XCTFail("expected direct call open")
+        }
+        if case .open(let req) = router.route("whatsapp 15551234567") {
+            XCTAssertEqual(req.url.absoluteString, "https://wa.me/15551234567")
+            XCTAssertEqual(req.kind, .whatsapp)
+        } else {
+            XCTFail("expected direct whatsapp open")
+        }
+    }
+
+    func testInstagramWhatsAppFrontPages() {
+        if case .open(let req) = router.route("open instagram") {
+            XCTAssertEqual(req.url.absoluteString, "https://www.instagram.com/")
+        } else {
+            XCTFail("expected instagram")
+        }
+        if case .open(let req) = router.route("open whatsapp") {
+            XCTAssertEqual(req.url.absoluteString, "https://www.whatsapp.com/")
+        } else {
+            XCTFail("expected whatsapp home")
+        }
     }
 
     func testMapsFaceTimeAppStoreCommands() {
@@ -141,5 +176,30 @@ final class FastCommandRouterTests: XCTestCase {
         // Misspellings and empty queries stay out of the allowlist.
         XCTAssertEqual(router.route("open youtub"), .none)
         XCTAssertEqual(router.route("youtube"), .open(OpenRequest.youTubeHome()!))
+    }
+
+    func testContactServiceNormalizedDigits() {
+        XCTAssertEqual(SystemContactService.normalizedDigits("+1 (555) 123-4567"), "15551234567")
+        XCTAssertEqual(SystemContactService.normalizedDigits("5551234567"), "5551234567")
+        XCTAssertNil(SystemContactService.normalizedDigits("123"))
+        XCTAssertNil(SystemContactService.normalizedDigits("mom"))
+        XCTAssertNil(SystemContactService.normalizedDigits(""))
+    }
+}
+
+/// Contact lookup tests use a spy (no address-book access in unit tests).
+/// Shared across test files in this target.
+final class SpyContactService: ContactService {
+    var permissionGranted = true
+    var numbersByName: [String: String] = [:]
+    var requestedPermission = false
+
+    func requestPermission() async -> Bool {
+        requestedPermission = true
+        return permissionGranted
+    }
+
+    func phoneNumber(for name: String) async -> String? {
+        numbersByName[name.lowercased()]
     }
 }

@@ -33,6 +33,19 @@ public final class ConversationManager: ObservableObject {
     /// UI layer (which owns UIApplication); nil in tests unless injected.
     public var openURLHandler: ((OpenRequest) -> Void)?
 
+    /// Re-opens the mic for hands-free looping. Set by the UI layer; invoked
+    /// after a voice-initiated turn completes while hands-free mode is on.
+    public var autoListenHandler: (() -> Void)?
+
+    /// Contact lookup for call/text/WhatsApp-by-name. Nil when unavailable
+    /// (tests that never use it); contact commands then report an error.
+    public var contactService: (any ContactService)?
+
+    /// True only while the in-flight turn was voice-initiated (STT final).
+    /// Typed turns never set it, so hands-free re-listening never fires
+    /// after typing. Consumed (reset) whenever it triggers or cancels.
+    private var voiceInitiatedTurn = false
+
     /// Future TTS hook. Nil in Phase 2 → text-only responses (state still
     /// flows PROCESSING → SPEAKING → IDLE momentarily).
     public var speechService: (any SpeechService)?
@@ -68,7 +81,8 @@ public final class ConversationManager: ObservableObject {
         // nonisolated, so `= GeminiDirectService()` here would not compile
         // (MainActor-isolated init called from a nonisolated context).
         geminiService: GeminiDirectService? = nil,
-        groqService: GroqDirectService? = nil
+        groqService: GroqDirectService? = nil,
+        contactService: (any ContactService)? = nil
     ) {
         self.stateMachine = stateMachine
         self.settings = settings
@@ -80,6 +94,7 @@ public final class ConversationManager: ObservableObject {
         self.backendService = backendService
         self.geminiService = geminiService ?? GeminiDirectService()
         self.groqService = groqService ?? GroqDirectService()
+        self.contactService = contactService
     }
 
     // MARK: - Service resolution
@@ -126,6 +141,18 @@ public final class ConversationManager: ObservableObject {
             messages.append(ConversationMessage(role: .user, text: trimmed))
             openURLHandler?(request)
             pushActivity(.init(kind: .system, title: "Opening \(request.label)"))
+            return
+        case .callContact(let name):
+            messages.append(ConversationMessage(role: .user, text: trimmed))
+            await handleContactCommand(name: name, makeRequest: OpenRequest.call)
+            return
+        case .messageContact(let name):
+            messages.append(ConversationMessage(role: .user, text: trimmed))
+            await handleContactCommand(name: name, makeRequest: OpenRequest.message)
+            return
+        case .whatsAppContact(let name):
+            messages.append(ConversationMessage(role: .user, text: trimmed))
+            await handleContactCommand(name: name, makeRequest: OpenRequest.whatsApp)
             return
         case .none:
             break
@@ -191,6 +218,8 @@ public final class ConversationManager: ObservableObject {
     /// Partials only hint speaking state — never fabricated into messages.
     public func acceptExternalTranscript(_ text: String, isFinal: Bool) async {
         if isFinal {
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            voiceInitiatedTurn = !trimmed.isEmpty
             await send(text)
         } else if !text.isEmpty {
             stateMachine.markUserSpeaking()
@@ -407,12 +436,56 @@ public final class ConversationManager: ObservableObject {
                 await self?.speak(text)
             }
         }
+        maybeAutoListen()
+    }
+
+    /// Resolves a contact name to a validated open request (call/text/chat).
+    /// Honest at every step: missing service, denied permission, unknown name,
+    /// and invalid numbers each produce a clear activity — never a blind dial.
+    private func handleContactCommand(name: String, makeRequest: (String) -> OpenRequest?) async {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            pushActivity(.init(kind: .error, title: "No contact name given"))
+            return
+        }
+        guard let directory = contactService else {
+            pushActivity(.init(kind: .error, title: "Contacts unavailable on this build"))
+            return
+        }
+        guard await directory.requestPermission() else {
+            pushActivity(.init(
+                kind: .error,
+                title: "Contacts permission denied",
+                detail: "Enable Contacts in iOS Settings to call or message by name."
+            ))
+            return
+        }
+        guard let digits = await directory.phoneNumber(for: trimmedName),
+              let request = makeRequest(digits) else {
+            pushActivity(.init(
+                kind: .error,
+                title: "Couldn't find '\(trimmedName)' in contacts",
+                detail: "Use the full name as saved, or dictate the digits directly."
+            ))
+            return
+        }
+        openURLHandler?(request)
+        pushActivity(.init(kind: .system, title: "Opening \(request.label)"))
     }
 
     /// Speaks via the wired SpeechService (nil by default → silent).
     private func speak(_ text: String) async {
         guard let speech = speechService else { return }
         await speech.speak(text)
+    }
+
+    /// Hands-free re-listen: after a voice-initiated turn ends while the mode
+    /// is on, ask the UI to reopen the mic. The flag is consumed here so a
+    /// typed turn never re-arms it, and cancellation clears it (see below).
+    private func maybeAutoListen() {
+        guard settings.handsFreeMode, voiceInitiatedTurn else { return }
+        voiceInitiatedTurn = false
+        autoListenHandler?()
     }
 
     /// Stops any ongoing speech: no post-cancel and no previous-request
@@ -431,6 +504,7 @@ public final class ConversationManager: ObservableObject {
         stateMachine.transition(to: .idle)
         pushActivity(.init(kind: .system, title: "Request cancelled"))
         teardown(requestId: requestId)
+        maybeAutoListen()
     }
 
     private func handleFailure(requestId: UUID, error: Error) {
@@ -447,6 +521,7 @@ public final class ConversationManager: ObservableObject {
         messages.append(ConversationMessage(role: .system, text: userMessage))
         pushActivity(.init(kind: .error, title: "AI request failed", detail: userMessage))
         teardown(requestId: requestId)
+        maybeAutoListen()
     }
 
     private func teardown(requestId: UUID) {
@@ -461,6 +536,9 @@ public final class ConversationManager: ObservableObject {
     private func cancelActiveRequest(announce: Bool) {
         guard let id = currentRequestId else { return }
         currentRequestId = nil
+        // Manual stop/new send ends hands-free chaining until the next
+        // voice-initiated turn re-arms it.
+        voiceInitiatedTurn = false
         streamTask?.cancel()
         streamTask = nil
         // Capture only the ID: the service existential is non-Sendable and

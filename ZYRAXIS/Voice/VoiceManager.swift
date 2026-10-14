@@ -23,6 +23,68 @@ public protocol VoiceManager: AnyObject {
     func stopListening()
 }
 
+/// Silence-based utterance boundary for hands-free use. Pure value type —
+/// fully unit-testable with explicit timestamps, no audio needed.
+///
+/// Policy: never end on pure silence (the mic may simply not have heard
+/// anything yet). Once speech crosses the threshold, sustained silence ends
+/// the utterance; an absolute capture cap always ends it. The manager stops
+/// the mic on either event, which ends STT gracefully so the trailing final
+/// still arrives and auto-sends — no second tap required.
+public struct SilenceDetector: Equatable, Sendable {
+
+    public enum Event: Equatable, Sendable {
+        case utteranceEnded
+        case captureTimedOut
+    }
+
+    /// RMS level at/above which audio counts as speech.
+    public var silenceThreshold: Float = 0.08
+    /// Quiet seconds after speech before the utterance ends.
+    public var silenceSeconds: TimeInterval = 1.2
+    /// Absolute capture cap from mic-open (safety, speech or not).
+    public var maxCaptureSeconds: TimeInterval = 60
+
+    private var startedAt: Date?
+    private var heardSpeech = false
+    private var silenceStart: Date?
+
+    public init() {}
+
+    public mutating func reset(at date: Date = Date()) {
+        startedAt = date
+        heardSpeech = false
+        silenceStart = nil
+    }
+
+    /// Feed one metered level. Returns an event at most once per boundary
+    /// (callers stop capture on it, then reset on next mic open).
+    public mutating func ingest(level: Float, at date: Date = Date()) -> Event? {
+        guard let start = startedAt else {
+            reset(at: date)
+            return nil
+        }
+        if date.timeIntervalSince(start) >= maxCaptureSeconds {
+            return .captureTimedOut
+        }
+        if level >= silenceThreshold {
+            heardSpeech = true
+            silenceStart = nil
+            return nil
+        }
+        guard heardSpeech else { return nil }
+        if let quietSince = silenceStart {
+            if date.timeIntervalSince(quietSince) >= silenceSeconds {
+                silenceStart = nil
+                return .utteranceEnded
+            }
+            return nil
+        }
+        silenceStart = date
+        return nil
+    }
+}
+
 @MainActor
 public final class VoiceManagerImpl: ObservableObject, VoiceManager {
 
@@ -41,6 +103,13 @@ public final class VoiceManagerImpl: ObservableObject, VoiceManager {
     /// mono samples alongside level metering — one tap, two consumers, no
     /// fabricated audio. Nil = level metering only.
     public var transcriber: (any STTProvider)?
+
+    /// Hands-free auto-stop: when true (and a transcriber is attached), the
+    /// mic closes itself after an utterance ends or the capture cap hits —
+    /// the trailing STT final then auto-sends. Set from Settings' hands-free
+    /// toggle whenever the mic opens. False = manual close only.
+    public var autoStopOnSilence = false
+    private var silenceDetector = SilenceDetector()
 
     public init() {
         observeInterruptions()
@@ -113,6 +182,7 @@ public final class VoiceManagerImpl: ObservableObject, VoiceManager {
             Task { @MainActor [weak self] in
                 self?.state = .listening(level: level)
                 self?.forwardTranscription(samples: samples, sampleRate: sampleRate, channels: channels)
+                self?.ingestLevelForAutoStop(level: level)
             }
         }
         engine.prepare()
@@ -125,17 +195,34 @@ public final class VoiceManagerImpl: ObservableObject, VoiceManager {
         }
         self.engine = engine
         state = .listening(level: 0)
+        silenceDetector.reset()
     }
 
     public func stopListening() {
         stopEngineSilently()
         transcriber?.stop()
+        silenceDetector.reset()
         if case .failed = state {
             // keep failure visible until next explicit action
         } else {
             state = .stopped
         }
         try? session.setActive(false, options: [.notifyOthersOnDeactivation])
+    }
+
+    /// Hands-free silence tracking: closes the mic when an utterance ends
+    /// (or the capture cap hits) so STT finals auto-send with no second tap.
+    /// Only when opted in AND a transcriber is attached — level-only metering
+    /// is never auto-closed.
+    private func ingestLevelForAutoStop(level: Float) {
+        guard autoStopOnSilence, state.isCapturing else { return }
+        guard transcriber != nil else { return }
+        switch silenceDetector.ingest(level: level, at: Date()) {
+        case .none:
+            break
+        case .utteranceEnded, .captureTimedOut:
+            stopListening()
+        }
     }
 
     /// Forwards copied samples to the attached transcriber (MainActor —

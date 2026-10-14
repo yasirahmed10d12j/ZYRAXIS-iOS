@@ -84,6 +84,11 @@ public final class SettingsStore: ObservableObject {
     @Published public var liveTranscriptionEnabled: Bool {
         didSet { defaults.set(liveTranscriptionEnabled, forKey: Keys.liveTranscription) }
     }
+    /// Hands-free loop: mic auto-closes on utterance end (STT final auto-sends)
+    /// and re-opens after each voice turn. Default OFF — explicit opt-in only.
+    @Published public var handsFreeMode: Bool {
+        didSet { defaults.set(handsFreeMode, forKey: Keys.handsFree) }
+    }
 
     /// The UserDefaults instance mutations persist to (`.standard` by
     /// default; isolated suites in tests).
@@ -105,6 +110,7 @@ public final class SettingsStore: ObservableObject {
         static let memory = "zyraxis.settings.memory"
         static let appearance = "zyraxis.settings.appearance"
         static let voiceResponses = "zyraxis.settings.voiceResponses"
+        static let handsFree = "zyraxis.settings.handsFree"
         static let liveTranscription = "zyraxis.settings.liveTranscription"
     }
 
@@ -132,6 +138,7 @@ public final class SettingsStore: ObservableObject {
         let rawAppearance = d.string(forKey: Keys.appearance) ?? Appearance.dark.rawValue
         self.appearance = Appearance(rawValue: rawAppearance) ?? .dark
         self.voiceResponsesEnabled = d.object(forKey: Keys.voiceResponses) as? Bool ?? false
+        self.handsFreeMode = d.object(forKey: Keys.handsFree) as? Bool ?? false
         self.liveTranscriptionEnabled = d.object(forKey: Keys.liveTranscription) as? Bool ?? false
     }
 
@@ -185,6 +192,7 @@ public final class SettingsStore: ObservableObject {
         memoryEnabled = true
         appearance = .dark
         voiceResponsesEnabled = false
+        handsFreeMode = false
         liveTranscriptionEnabled = false
     }
 }

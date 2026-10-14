@@ -37,5 +37,7 @@
     <string>ZYRAXIS will use the camera for future visual analysis. Phase 4 requests permission only.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>ZYRAXIS uses speech recognition for optional live transcription of your voice commands. Enable it in Settings to talk to ZYRAXIS.</string>
+    <key>NSContactsUsageDescription</key>
+    <string>ZYRAXIS looks up contacts only when you ask to call or message someone by name. Names and numbers never leave your iPhone except inside the call or message you requested.</string>
 </dict>
 </plist>
