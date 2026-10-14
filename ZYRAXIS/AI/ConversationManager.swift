@@ -233,6 +233,18 @@ public final class ConversationManager: ObservableObject {
         await streamTask?.value
     }
 
+    /// Server-pushed command (dashboard → device). Routed through `send(_:)`
+    /// so the exact same fast-command validation applies as typed text:
+    /// validated commands (open/call/brightness/remind/…) execute, anything
+    /// else falls through to the AI like a normal message. Origin is logged
+    /// as an activity so remote turns are always distinguishable.
+    public func handleRemoteCommand(_ command: String) async {
+        let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        pushActivity(.init(kind: .system, title: "Remote command from server", detail: String(trimmed.prefix(120))))
+        await send(trimmed)
+    }
+
     /// Entry point for future STT: final transcripts feed `send(_:)`.
     /// Partials only hint speaking state — never fabricated into messages.
     public func acceptExternalTranscript(_ text: String, isFinal: Bool) async {

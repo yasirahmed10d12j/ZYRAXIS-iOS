@@ -25,6 +25,7 @@ public enum BackendMessageType: Equatable, Sendable {
     case toolResult
     case ping
     case pong
+    case remoteCommand
     case unknown(String)
 
     public var rawValue: String {
@@ -39,6 +40,7 @@ public enum BackendMessageType: Equatable, Sendable {
         case .toolResult: return "tool_result"
         case .ping: return "ping"
         case .pong: return "pong"
+        case .remoteCommand: return "remote_command"
         case .unknown(let s): return s
         }
     }
@@ -55,6 +57,7 @@ public enum BackendMessageType: Equatable, Sendable {
         case "tool_result": return .toolResult
         case "ping": return .ping
         case "pong": return .pong
+        case "remote_command": return .remoteCommand
         default: return .unknown(rawValue)
         }
     }
@@ -249,6 +252,18 @@ public struct PingPayload: Codable, Equatable, Sendable {
     }
 }
 
+/// Server-pushed command (dashboard → device). Executed only through the
+/// conversation engine's fast-command path, so the same validation applies
+/// as typed text — unvalidated input falls through to the AI, never to a
+/// bypass. Carries no auth of its own: it is trusted because it arrives on
+/// the already-authenticated server socket (dashboard itself is key-gated).
+public struct RemoteCommandPayload: Codable, Equatable, Sendable {
+    public var command: String
+    public init(command: String) {
+        self.command = command
+    }
+}
+
 public enum BackendProtocolError: LocalizedError, Equatable, Sendable {
     case versionMismatch(expected: Int, received: Int)
     case malformedMessage(String)
@@ -319,6 +334,11 @@ public struct ZyraxisV1Adapter: BackendMessageAdapter, Sendable {
             return [.cancelled(requestId: requestId)]
         case .ping, .pong:
             // Transport-level keepalive — handled by the socket layer, not the AI layer.
+            return []
+        case .remoteCommand:
+            // Server-pushed command — handled by BackendAIService's persistent
+            // listener (request-scoped sinks drop it: its requestId is the
+            // server's, never the in-flight turn's). Never surfaced as chat.
             return []
         case .userMessage:
             // Server echoing our own message — ignore client-side.

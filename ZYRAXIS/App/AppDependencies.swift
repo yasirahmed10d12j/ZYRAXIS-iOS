@@ -175,6 +175,14 @@ public final class AppDependencies: ObservableObject {
         // Voice loop: mic → STT → ConversationManager. Finals auto-send;
         // partials only hint speaking state (never fabricated into messages).
         deps.conversation.speechService = tts
+        // Server push: dashboard remote commands arrive on the backend socket
+        // at any time (even idle) and run through the engine's fast path.
+        backend.remoteCommandHandler = { [weak deps] command in
+            guard let conversation = deps?.conversation else { return }
+            Task { @MainActor [weak conversation] in
+                await conversation?.handleRemoteCommand(command)
+            }
+        }
         stt.transcripts.sink { [weak deps] transcript in
             guard let conversation = deps?.conversation else { return }
             Task { @MainActor [weak conversation] in

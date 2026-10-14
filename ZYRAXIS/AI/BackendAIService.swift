@@ -61,6 +61,15 @@ public final class BackendAIService: @preconcurrency AIService {
     /// Active frame subscriptions, one per in-flight request. ConversationManager
     /// serializes sends (single active request), so this stays tiny.
     private var streamSinks: [UUID: AnyCancellable] = [:]
+    /// Server-pushed commands (dashboard → device). Invoked on the MainActor
+    /// with the raw command text; the engine routes it through the normal
+    /// fast-command path. Nil unless wired (tests leave it nil).
+    public var remoteCommandHandler: ((String) -> Void)?
+    /// Persistent unsolicited-frame listener. Per-request sinks only accept
+    /// frames echoing their own requestId, so server-initiated frames (whose
+    /// requestId is the server's) would otherwise have no receiver at all.
+    /// Default-nil so `self` is fully formed before `init` captures it weakly.
+    private var remoteSink: AnyCancellable? = nil
     /// Last observed HTTP status (for DEBUG diagnostics). Nil until the first
     /// chat POST completes.
     public private(set) var lastHttpStatus: Int?
@@ -78,6 +87,14 @@ public final class BackendAIService: @preconcurrency AIService {
         self.auth = auth
         self.configProvider = configProvider
         self.adapter = adapter
+        // Listen for server-pushed frames for the life of the service.
+        // Everything except remote_command is ignored here — request-scoped
+        // sinks own all the rest, so this never double-delivers.
+        self.remoteSink = socket.incomingText.sink { [weak self] raw in
+            Task { [weak self] in
+                await self?.handleUnsolicitedFrame(raw)
+            }
+        }
     }
 
     // MARK: - Non-streaming (HTTPS)
@@ -186,6 +203,21 @@ public final class BackendAIService: @preconcurrency AIService {
         }
         // The stream stays open until the backend sends assistant_complete /
         // assistant_error, the consumer cancels, or cancelRequest ends it.
+    }
+
+    /// Receiver for server-initiated frames. Only `remote_command` is acted
+    /// on; anything else (deltas for a live turn, pings, tool traffic) belongs
+    /// to request-scoped handlers and is ignored here. A malformed command
+    /// frame is logged and dropped — never executed, never crashed on.
+    private func handleUnsolicitedFrame(_ raw: String) async {
+        guard remoteCommandHandler != nil else { return }
+        guard let envelope = try? ZyraxisEnvelope.decode(raw),
+              envelope.type == .remoteCommand,
+              let payload = try? envelope.decodePayload(RemoteCommandPayload.self) else { return }
+        let command = payload.command.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !command.isEmpty else { return }
+        ZyraxisLogger.log(.websocket, "remote command received (\(command.prefix(60)))")
+        remoteCommandHandler?(command)
     }
 
     private func handleFrame(
