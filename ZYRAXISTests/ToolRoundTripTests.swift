@@ -190,7 +190,7 @@ final class ToolRoundTripTests: XCTestCase {
     func testAlarmToolDescriptor() {
         let tool = AlarmTool()
         XCTAssertEqual(tool.name, "set_alarm")
-        XCTAssertEqual(tool.riskLevel, .requiresConfirmation)
+        XCTAssertEqual(tool.riskLevel, .reversible)
         XCTAssertTrue(tool.requiresConfirmation)
     }
 

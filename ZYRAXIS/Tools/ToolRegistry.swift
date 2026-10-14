@@ -9,6 +9,10 @@ public struct ToolInput: Equatable, Sendable {
 /// Output of an agent tool run.
 public struct ToolOutput: Equatable, Sendable {
     public var text: String
+    public var succeeded: Bool { true } // Tools throw on failure; non-throwing = success
+    public var outputJSON: String { text }
+    public var error: String? { nil }
+    
     public init(text: String) { self.text = text }
 }
 
