@@ -8,7 +8,7 @@ public enum TaskFilter: Sendable {
     case dueToday
 }
 
-public enum TaskError: LocalizedError, Equatable {
+public enum TaskError: LocalizedError, Equatable, Sendable {
     case notFound
     case emptyTitle
     case invalidSnoozeDate

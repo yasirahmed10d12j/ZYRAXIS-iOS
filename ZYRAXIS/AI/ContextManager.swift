@@ -46,7 +46,8 @@ public struct ContextManager: Sendable {
     // MARK: - Message bounding (newest wins, chronological out)
 
     func boundMessages(_ history: [ConversationMessage]) -> [ConversationMessage] {
-        var recent = Array(history.suffix(limits.maxMessages))
+        // Clamp: Array.suffix(_:) traps on a negative count.
+        var recent = Array(history.suffix(max(limits.maxMessages, 0)))
         // Enforce the character budget from the oldest side.
         var total = recent.reduce(0) { $0 + $1.text.count }
         while total > limits.maxTotalChars, !recent.isEmpty {
@@ -59,8 +60,16 @@ public struct ContextManager: Sendable {
     // MARK: - Memory filtering
 
     /// Drops secret-tagged memories, sorts by importance, caps count + chars.
+    /// Exact-match on lowercased tags. Tags that name credentials in any
+    /// common spelling are forbidden (see set below) — content is never
+    /// scanned, so do not rely on this for inline secrets.
     func filterMemories(_ memories: [MemoryItem]) -> [MemoryItem] {
-        let forbiddenTags: Set<String> = ["secret", "credential", "password", "api_key", "apikey", "token", "private_key"]
+        let forbiddenTags: Set<String> = [
+            "secret", "secrets", "secret_key", "secretkey", "secret-key",
+            "credential", "credentials", "password", "passwd", "pass",
+            "api_key", "apikey", "key", "keys", "token", "tokens",
+            "private_key", "privatekey", "auth", "bearer",
+        ]
         let safe = memories.filter { item in
             !item.tags.contains { forbiddenTags.contains($0.lowercased()) }
         }

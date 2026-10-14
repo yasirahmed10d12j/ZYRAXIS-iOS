@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// Settings screen: placeholders + real Phase 1 controls.
+/// Settings screen: placeholders + real controls.
 ///
-/// Real in Phase 1: backend URL editing, timeout, provider picker (mock only
-/// enabled), voice/notification/memory toggles, appearance, API-key keychain
-/// field, reset. Everything else is an honest placeholder for later phases.
+/// Real: backend URL editing, timeout, provider picker (mock/backend/direct),
+/// voice/notification/memory toggles, appearance, API-key keychain field,
+/// reset. Everything else is an honest placeholder for later phases.
 public struct SettingsView: View {
 
     @EnvironmentObject private var deps: AppDependencies

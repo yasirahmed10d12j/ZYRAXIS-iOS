@@ -13,6 +13,17 @@ struct SpyReadTool: AgentTool {
     }
 }
 
+/// Cancellation double: cooperative cancellation must propagate through
+/// the registry instead of becoming a tool failure.
+struct CancellingTool: AgentTool {
+    let name = "test.cancel"
+    let description = "Always cancels."
+
+    func execute(input: ToolInput) async throws -> ToolOutput {
+        throw CancellationError()
+    }
+}
+
 /// Dangerous tool double: must NEVER execute from a server tool_call.
 /// If it ever ran, its marker output would appear in the result.
 struct DangerousTool: AgentTool {
@@ -115,5 +126,18 @@ final class ToolRoundTripTests: XCTestCase {
         let wipe = descs.first(where: { $0.name == "test.wipe" })
         XCTAssertEqual(wipe?.riskLevel, .destructive)
         XCTAssertEqual(wipe?.requiresConfirmation, true)
+    }
+
+    func testCancellationPropagatesFromTools() async {
+        let registry = DefaultToolRegistry()
+        await registry.register(CancellingTool())
+        do {
+            _ = try await registry.execute(call: ToolCall(toolName: "test.cancel", argumentsJSON: "{}"))
+            XCTFail("expected CancellationError")
+        } catch is CancellationError {
+            // Expected: cancellation must propagate, not become a failure.
+        } catch {
+            XCTFail("expected CancellationError, got \(error)")
+        }
     }
 }

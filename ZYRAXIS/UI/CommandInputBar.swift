@@ -45,9 +45,9 @@ public struct CommandInputBar: View {
                 Button(action: onSend) {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 28))
-                        .foregroundStyle(text.trimmingCharacters(in: .whitespaces).isEmpty ? .gray : ZyraxisTheme.cyan)
+                        .foregroundStyle(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .gray : ZyraxisTheme.cyan)
                 }
-                .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
         .padding(.horizontal, 14)

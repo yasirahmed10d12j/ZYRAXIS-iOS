@@ -10,7 +10,7 @@ public protocol MemoryService: Sendable {
     func listAll() async throws -> [MemoryItem]
 }
 
-public enum MemoryError: LocalizedError, Equatable {
+public enum MemoryError: LocalizedError, Equatable, Sendable {
     case notFound
     case emptyContent
 

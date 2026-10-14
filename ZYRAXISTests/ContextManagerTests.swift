@@ -60,4 +60,25 @@ final class ContextManagerTests: XCTestCase {
         XCTAssertEqual(ctx.availableTools, ["a", "b"])
         XCTAssertEqual(ctx.systemPrompt, "sys")
     }
+
+    func testNegativeMaxMessagesYieldsEmptyWithoutTrapping() {
+        // Array.suffix(_:) traps on negative counts — limits must be clamped.
+        let mgr = ContextManager(limits: ContextLimits(maxMessages: -5, maxMemories: 5, maxTotalChars: 1000, maxMemoryChars: 100))
+        let ctx = mgr.build(history: [message("hi")], memories: [], state: .idle)
+        XCTAssertTrue(ctx.messages.isEmpty)
+    }
+
+    func testExtendedSecretTagsExcluded() {
+        let mgr = ContextManager()
+        let memories = [
+            memory("keep me", tags: ["note"], importance: 0.5),
+            memory("k1", tags: ["key"], importance: 0.9),
+            memory("k2", tags: ["SECRET-KEY"], importance: 0.9),
+            memory("k3", tags: ["Credentials"], importance: 0.9),
+            memory("k4", tags: ["bearer"], importance: 0.9)
+        ]
+        let ctx = mgr.build(history: [], memories: memories, state: .idle)
+        XCTAssertEqual(ctx.memories.count, 1)
+        XCTAssertEqual(ctx.memories.first?.content, "keep me")
+    }
 }

@@ -76,6 +76,10 @@ public final class AssistantStateMachine: ObservableObject {
         // Force-transition: error can be reached from any state.
         state = .error
         stateHistory.append(.error)
+        // Same 200-entry bound as transition(to:) — fail() bypasses it above.
+        if stateHistory.count > 200 {
+            stateHistory.removeFirst(stateHistory.count - 200)
+        }
     }
 
     /// Recover from error back to idle. Only valid from `.error`.

@@ -202,4 +202,11 @@ public final class AppDependencies: ObservableObject {
     public func setVoiceControlHandler(_ handler: ((FastCommandMicAction) -> Void)?) {
         conversation.voiceControlHandler = handler
     }
+
+    /// Opens validated external URLs from fast-path open commands.
+    /// Forwarded to the conversation engine (which owns the handler slot).
+    public var openURLHandler: ((OpenRequest) -> Void)? {
+        get { conversation.openURLHandler }
+        set { conversation.openURLHandler = newValue }
+    }
 }

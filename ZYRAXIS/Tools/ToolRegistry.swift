@@ -75,7 +75,7 @@ public protocol ToolRegistry: Sendable {
     func execute(call: ToolCall) async throws -> ToolOutput
 }
 
-public enum ToolError: LocalizedError, Equatable {
+public enum ToolError: LocalizedError, Equatable, Sendable {
     case unknownTool(String)
     case executionFailed(String)
 
@@ -124,6 +124,9 @@ public actor DefaultToolRegistry: ToolRegistry {
         }
         do {
             return try await tool.execute(input: ToolInput(rawJSON: call.argumentsJSON))
+        } catch is CancellationError {
+            // Cooperative cancellation must propagate, not become a failure.
+            throw CancellationError()
         } catch let e as ToolError {
             throw e
         } catch {
