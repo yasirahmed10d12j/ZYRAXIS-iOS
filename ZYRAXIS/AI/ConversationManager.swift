@@ -181,6 +181,15 @@ public final class ConversationManager: ObservableObject {
             messages.append(ConversationMessage(role: .user, text: trimmed))
             await handleRememberPhone(name: name, digits: digits)
             return
+        case .whoIs(let name):
+            // Hit answers locally; a miss falls through to the AI below
+            // (no message appended yet, so the normal path stays exact).
+            if await handleWhoIs(name) { return }
+            break
+        case .savedPlace(let place):
+            messages.append(ConversationMessage(role: .user, text: trimmed))
+            await handleSavedPlace(place)
+            return
         case .none:
             break
         }
@@ -639,6 +648,41 @@ public final class ConversationManager: ObservableObject {
             pushActivity(.init(kind: .system, title: "Saved \(pretty)'s number"))
         } catch {
             pushActivity(.init(kind: .error, title: "Couldn't save that number", detail: error.localizedDescription))
+        }
+    }
+
+    /// "Who is <name>" — reads the matching memory entry back as an assistant
+    /// message. Returns false (caller falls through to the AI) when memory
+    /// has nothing on the name.
+    private func handleWhoIs(_ name: String) async -> Bool {
+        guard let items = try? await memoryService.search(query: name, limit: 5) else { return false }
+        let hit = items.first(where: { Self.containsWord($0.content.lowercased(), name.lowercased()) })
+        guard let found = hit else { return false }
+        await handleFastAnswer(userText: "who is \(name)", reply: found.content)
+        return true
+    }
+
+    /// "Directions home/work" — resolves "<place> address" from memory
+    /// ("remember my home address is …") and opens Apple Maps. A miss says
+    /// exactly how to teach it instead of guessing.
+    private func handleSavedPlace(_ place: String) async {
+        let query = "\(place) address"
+        let items = (try? await memoryService.search(query: query, limit: 5)) ?? []
+        let hit = items.first(where: { Self.containsWord($0.content.lowercased(), query) })
+        var address = hit?.content ?? ""
+        if let range = address.lowercased().range(of: " is ", options: .backwards) {
+            address = String(address[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if !address.isEmpty, let request = OpenRequest.maps(query: address) {
+            openURLHandler?(request)
+            pushActivity(.init(kind: .system, title: "Directions to \(place)"))
+        } else {
+            let pretty = place.prefix(1).uppercased() + place.dropFirst()
+            messages.append(ConversationMessage(
+                role: .assistant,
+                text: "I don't know your \(place) address yet — say \"remember my \(place) address is\" followed by the address."
+            ))
+            pushActivity(.init(kind: .system, title: "\(pretty) address unknown"))
         }
     }
 

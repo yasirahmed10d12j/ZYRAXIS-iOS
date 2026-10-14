@@ -130,6 +130,28 @@ public struct OpenRequest: Equatable, Sendable {
         return OpenRequest(url: url, label: "X", kind: .website)
     }
 
+    /// Spotify front page (universal link — app when installed, web fallback).
+    public static func spotifyHome() -> OpenRequest? {
+        guard let url = URL(string: "https://open.spotify.com/") else { return nil }
+        return OpenRequest(url: url, label: "Spotify", kind: .website)
+    }
+
+    /// Google Maps front page (universal link).
+    public static func googleMapsHome() -> OpenRequest? {
+        guard let url = URL(string: "https://maps.google.com/") else { return nil }
+        return OpenRequest(url: url, label: "Google Maps", kind: .maps)
+    }
+
+    /// Web search via Google in the default browser (Safari). Query only —
+    /// never a fabricated destination.
+    public static func webSearch(_ rawQuery: String) -> OpenRequest? {
+        let query = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty, query.count <= 200,
+              let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "https://www.google.com/search?q=\(encoded)") else { return nil }
+        return OpenRequest(url: url, label: "web search", kind: .website)
+    }
+
     /// Fixed Facebook front page (universal link, no user input).
     public static func facebookHome() -> OpenRequest? {
         guard let url = URL(string: "https://www.facebook.com/") else { return nil }
@@ -266,6 +288,12 @@ public enum FastCommandAction: Equatable, Sendable {
     case remind(text: String, dueDate: Date?)
     /// Read back active reminders as an assistant message.
     case myReminders
+    /// Look up a remembered person/thing ("who is Rehan"). Engine reads
+    /// memory; a miss falls through to the AI like a normal message.
+    case whoIs(String)
+    /// Saved-place directions ("directions home"). Engine resolves the
+    /// address from memory ("my home address is …").
+    case savedPlace(String)
     /// Save a note to memory ("remember that …"). Shown back as confirmation.
     case remember(String)
     /// Save "<name>'s phone number: <digits>" to memory for call-by-name.
@@ -328,6 +356,18 @@ public struct FastCommandRouter: Sendable {
         }
         if let remember = Self.rememberAction(for: norm) {
             return remember
+        }
+        if let math = Self.mathAction(for: norm) {
+            return math
+        }
+        if let who = Self.whoIsAction(for: norm) {
+            return who
+        }
+        if let place = Self.savedPlaceAction(for: norm) {
+            return place
+        }
+        if let alarm = Self.alarmAction(for: norm) {
+            return alarm
         }
         if let remind = Self.reminderAction(for: norm) {
             return remind
@@ -470,6 +510,228 @@ public struct FastCommandRouter: Sendable {
         name.split(separator: " ").map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " ")
     }
 
+    /// "who is <name>" — single-word names only, so factual questions
+    /// ("who is the president?") always reach the AI. Engine reads memory;
+    /// a miss falls through to the AI.
+    static func whoIsAction(for norm: String) -> FastCommandAction? {
+        guard let rest = remainder(after: ["who is", "who's"], in: norm),
+              !rest.isEmpty, rest.count <= 20, !rest.contains(" ") else { return nil }
+        return .whoIs(rest)
+    }
+
+    /// Saved places: "directions home", "take me home", "navigate to work".
+    /// Engine resolves the address from memory.
+    static func savedPlaceAction(for norm: String) -> FastCommandAction? {
+        for phrase in ["directions home", "navigate home", "take me home", "go home", "drive home"] {
+            if norm == phrase { return .savedPlace("home") }
+        }
+        for phrase in ["directions to work", "navigate to work", "take me to work", "go to work", "drive to work"] {
+            if norm == phrase { return .savedPlace("work") }
+        }
+        return nil
+    }
+
+    /// Offline math: "what is 12*8?", "calculate 45+7", "how much is 100/4".
+    /// Strict charset (digits + operators only) so normal questions pass
+    /// through. Percent supported ("10% of 250" NOT — unsupported shape).
+    static func mathAction(for norm: String) -> FastCommandAction? {
+        // Unit conversions first ("convert 5 km to miles").
+        if norm.hasPrefix("convert ") {
+            if let answer = convertAnswer(for: norm) { return .answer(answer) }
+            return nil
+        }
+        var expr: String?
+        for prefix in ["what is ", "calculate ", "how much is ", "solve ", "compute "] {
+            if norm.hasPrefix(prefix) { expr = String(norm.dropFirst(prefix.count)); break }
+        }
+        guard var e = expr?.trimmingCharacters(in: .whitespacesAndNewlines), !e.isEmpty else { return nil }
+        e = e.replacingOccurrences(of: "[?!.,]+$", with: "", options: .regularExpression)
+        e = e.replacingOccurrences(of: " ", with: "")
+        guard !e.isEmpty, e.allSatisfy({ $0.isNumber || "+-*/().%".contains($0) }),
+              e.contains(where: { "+-*/%".contains($0) }) else { return nil }
+        guard let value = evaluate(e) else { return nil }
+        return .answer("= \(formatNumber(value))")
+    }
+
+    /// Tiny shunting-yard evaluator: +-*/% ( ) decimals, unary minus.
+    /// Returns nil on any malformed input (never throws, never crashes).
+    static func evaluate(_ expr: String) -> Double? {
+        var values: [Double] = []
+        var ops: [Character] = []
+        func precedence(_ op: Character) -> Int {
+            switch op { case "+", "-": return 1; case "*", "/", "%": return 2; default: return 0 }
+        }
+        func apply() -> Bool {
+            guard ops.count > 0, values.count >= 2 else { return false }
+            let op = ops.removeLast()
+            let b = values.removeLast()
+            let a = values.removeLast()
+            switch op {
+            case "+": values.append(a + b)
+            case "-": values.append(a - b)
+            case "*": values.append(a * b)
+            case "/": guard b != 0 else { return false }; values.append(a / b)
+            case "%": guard b != 0 else { return false }; values.append(a.truncatingRemainder(dividingBy: b))
+            default: return false
+            }
+            return true
+        }
+        var i = expr.startIndex
+        var expectValue = true
+        while i < expr.endIndex {
+            let c = expr[i]
+            if c.isNumber || c == "." || (c == "-" && expectValue) {
+                var j = i
+                if expr[j] == "-" { j = expr.index(after: j) }
+                var dots = 0
+                while j < expr.endIndex && (expr[j].isNumber || expr[j] == ".") {
+                    if expr[j] == "." { dots += 1; if dots > 1 { return nil } }
+                    j = expr.index(after: j)
+                }
+                guard j > i, let v = Double(String(expr[i..<j])) else { return nil }
+                values.append(v)
+                i = j
+                expectValue = false
+            } else if c == "(" {
+                ops.append(c)
+                i = expr.index(after: i)
+                expectValue = true
+            } else if c == ")" {
+                while ops.last != "(" {
+                    guard apply() else { return nil }
+                }
+                guard ops.last == "(" else { return nil }
+                ops.removeLast()
+                i = expr.index(after: i)
+                expectValue = false
+            } else if "+*/%".contains(c) || (c == "-" && !expectValue) {
+                while let top = ops.last, top != "(", precedence(top) >= precedence(c) {
+                    guard apply() else { return nil }
+                }
+                ops.append(c)
+                i = expr.index(after: i)
+                expectValue = true
+            } else {
+                return nil
+            }
+        }
+        while !ops.isEmpty {
+            if ops.last == "(" { return nil }
+            guard apply() else { return nil }
+        }
+        return values.count == 1 ? values[0] : nil
+    }
+
+    static func formatNumber(_ v: Double) -> String {
+        if v.isInfinite || v.isNaN { return "undefined" }
+        if v == v.rounded() && abs(v) < 1e15 { return String(Int64(v)) }
+        return String(format: "%.4g", v)
+    }
+
+    /// Length/weight/temperature conversions between common units.
+    static func convertAnswer(for norm: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: "^convert\\s+([\\d.]+)\\s*([a-z°]+)\\s+to\\s+([a-z°]+)$") else { return nil }
+        let range = NSRange(norm.startIndex..., in: norm)
+        guard let m = regex.firstMatch(in: norm, range: range),
+              let vr = Range(m.range(at: 1), in: norm),
+              let fr = Range(m.range(at: 2), in: norm),
+              let tr = Range(m.range(at: 3), in: norm),
+              let amount = Double(String(norm[vr])) else { return nil }
+        let from = String(norm[fr]), to = String(norm[tr])
+        // Temperature needs offsets — handled separately.
+        if let t = convertTemp(amount, from: from, to: to) { return t }
+        let meters: [String: Double] = ["mm": 0.001, "cm": 0.01, "m": 1, "meter": 1, "meters": 1,
+            "km": 1000, "kilometer": 1000, "kilometers": 1000, "in": 0.0254, "inch": 0.0254, "inches": 0.0254,
+            "ft": 0.3048, "foot": 0.3048, "feet": 0.3048, "yd": 0.9144, "yard": 0.9144, "yards": 0.9144,
+            "mi": 1609.344, "mile": 1609.344, "miles": 1609.344]
+        let grams: [String: Double] = ["mg": 0.001, "g": 1, "gram": 1, "grams": 1, "kg": 1000,
+            "kilogram": 1000, "kilograms": 1000, "oz": 28.3495, "ounce": 28.3495, "ounces": 28.3495,
+            "lb": 453.592, "lbs": 453.592, "pound": 453.592, "pounds": 453.592]
+        if let a = meters[from], let b = meters[to] {
+            return "= \(formatNumber(amount * a / b)) \(to)"
+        }
+        if let a = grams[from], let b = grams[to] {
+            return "= \(formatNumber(amount * a / b)) \(to)"
+        }
+        return nil
+    }
+
+    static func convertTemp(_ v: Double, from: String, to: String) -> String? {
+        func toC(_ x: Double, _ u: String) -> Double? {
+            switch u {
+            case "c", "celsius", "°c", "c°": return x
+            case "f", "fahrenheit", "°f", "f°": return (x - 32) * 5 / 9
+            case "k", "kelvin": return x - 273.15
+            default: return nil
+            }
+        }
+        func fromC(_ x: Double, _ u: String) -> Double? {
+            switch u {
+            case "c", "celsius", "°c", "c°": return x
+            case "f", "fahrenheit", "°f", "f°": return x * 9 / 5 + 32
+            case "k", "kelvin": return x + 273.15
+            default: return nil
+            }
+        }
+        guard let c = toC(v, from), let out = fromC(c, to) else { return nil }
+        return "= \(formatNumber(out)) \(to)"
+    }
+
+    /// Alarm-style reminders: "wake me up at 7", "set an alarm for 7:30pm".
+    /// Reuses the reminder pipeline (task + local notification) — iOS gives
+    /// third-party apps no real alarm API, so this is the honest equivalent.
+    /// Unparseable times fall through to the AI.
+    static func alarmAction(for norm: String) -> FastCommandAction? {
+        var rest: String?
+        for prefix in ["wake me up at ", "wake me at ", "set an alarm for ", "set alarm for ",
+                       "alarm at ", "alarm for ", "wake me up ", "wake me "] {
+            if norm.hasPrefix(prefix) { rest = String(norm.dropFirst(prefix.count)); break }
+        }
+        guard let raw = rest?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty,
+              let (hour, minute) = parseAlarmTime(raw) else { return nil }
+        let due = nextOccurrence(hour: hour, minute: minute)
+        let label = String(format: "Alarm for %02d:%02d", hour, minute)
+        return .remind(text: label, dueDate: due)
+    }
+
+    static func parseAlarmTime(_ raw: String) -> (Int, Int)? {
+        guard let regex = try? NSRegularExpression(pattern: "^(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm|o'clock|o clock)?$") else { return nil }
+        let range = NSRange(raw.startIndex..., in: raw)
+        guard let m = regex.firstMatch(in: raw, range: range),
+              let hr = Range(m.range(at: 1), in: raw),
+              let hour0 = Int(String(raw[hr])) else { return nil }
+        var minute = 0
+        if m.range(at: 2).location != NSNotFound, let mr = Range(m.range(at: 2), in: raw) {
+            minute = Int(String(raw[mr])) ?? -1
+        }
+        guard minute >= 0 && minute <= 59 else { return nil }
+        var meridiem: String?
+        if m.range(at: 3).location != NSNotFound, let ar = Range(m.range(at: 3), in: raw) {
+            meridiem = String(raw[ar])
+        }
+        var hour = hour0
+        if let mer = meridiem {
+            guard hour >= 1 && hour <= 12 else { return nil }
+            if mer == "am" { hour = hour == 12 ? 0 : hour }
+            else if mer == "pm" { hour = hour == 12 ? 12 : hour + 12 }
+            else { hour = hour == 12 ? 0 : hour } // o'clock → am-style
+        } else {
+            guard hour <= 23 else { return nil }
+        }
+        return (hour, minute)
+    }
+
+    /// Next wall-clock occurrence of h:m (today if still ahead, else tomorrow).
+    static func nextOccurrence(hour: Int, minute: Int, now: Date = Date()) -> Date {
+        let cal = Calendar.current
+        var comps = cal.dateComponents([.year, .month, .day], from: now)
+        comps.hour = hour
+        comps.minute = minute
+        comps.second = 0
+        if let today = cal.date(from: comps), today > now { return today }
+        return cal.date(byAdding: .day, value: 1, to: cal.date(from: comps) ?? now) ?? now
+    }
+
     /// "remind me to <text>" [+ "in N minutes|hours"]. Bare "remind me" and
     /// unparseable times fall through to the AI.
     static func reminderAction(for norm: String) -> FastCommandAction? {
@@ -546,6 +808,12 @@ public struct FastCommandRouter: Sendable {
         if norm == "x" || norm == "open x" || norm == "twitter" || norm == "open twitter" {
             return OpenRequest.xHome()
         }
+        if norm == "spotify" || norm == "open spotify" {
+            return OpenRequest.spotifyHome()
+        }
+        if norm == "google maps" || norm == "open google maps" {
+            return OpenRequest.googleMapsHome()
+        }
         if norm == "facebook" || norm == "open facebook" {
             return OpenRequest.facebookHome()
         }
@@ -557,6 +825,10 @@ public struct FastCommandRouter: Sendable {
         }
         if let rest = remainder(after: ["search youtube for", "open youtube", "youtube"], in: norm) {
             return OpenRequest.youTubeSearch(rest)
+        }
+        if let rest = remainder(after: ["search for", "search", "google", "look up", "lookup"], in: norm),
+           !rest.isEmpty, !rest.contains("reminder") && !rest.contains("task") {
+            return OpenRequest.webSearch(rest)
         }
         if let rest = remainder(after: ["directions to", "navigate to", "show map of", "map of", "maps"], in: norm) {
             return OpenRequest.maps(query: rest)

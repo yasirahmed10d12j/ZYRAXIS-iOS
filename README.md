@@ -249,6 +249,7 @@ Non-streaming fallback: `POST {baseURL}/api/{apiVersion}/chat`
 | Remote commands (dashboard → device `remote_command`) | ✅ REAL receiver (persistent socket listener → fast-command path, origin logged), tested with doubles; needs server dashboard to send; old builds ignore the frame safely |
 | Memory notes + call-by-memory ("remember …", "<name>'s number is …" → "call <name>") | ✅ REAL local logic, tested with doubles; contacts tried first, memory fallback with word-boundary match; short names skip lookup |
 | System apps (Messages/Mail/FaceTime fronts) + torch | ✅ REAL routing, tested URL construction; on-device open/torch behavior UNVERIFIED — REQUIRES DEVICE |
+| Offline math + unit conversions, web search, Spotify/Maps, who-is, home/work directions, alarms-as-reminders | ✅ REAL local logic, tested; directions resolve addresses from memory |
 | Volume / Phone-keypad control | ❌ impossible — iOS offers no public API; answered honestly on-device |
 | Connection diagnostics + T0…T4 latency | ✅ REAL values or "—" (DEBUG section, no fake metrics) |
 | Dev/Staging/Production environments | ✅ REAL URL resolution with production fallback |
@@ -451,8 +452,12 @@ Fast commands that open iPhone destinations through Apple-supported schemes
 and universal links only. Say exactly:
 
 - `open example.com` / `go to example.com` → website (Safari)
+- `search cats` / `google cats` → web search · `open spotify` → Spotify · `open google maps` → Google Maps
 - `call 5551234567` → Phone (system confirmation sheet)
 - `text 5551234567` → Messages · `email a@b.com` → Mail
+- `open messages` / `open mail` / `open facetime` → those composers/app (device-UNVERIFIED)
+- `call rehan` → contacts first, then remembered numbers ("Rehan's number is …")
+- `remember that …` / `rehan's number is …` → saved to on-device memory
 - `directions to paris` / `navigate to …` / `map of …` → Apple Maps
 - `facetime 5551234567` → FaceTime · `open app store` → App Store
 - `open youtube` / `youtube cats` → YouTube (HTTPS universal link: opens the
