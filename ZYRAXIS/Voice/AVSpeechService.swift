@@ -81,12 +81,12 @@ public final class AVSpeechService: NSObject, @preconcurrency SpeechService {
     private static func dominantScript(of text: String) -> Script {
         var counts: [Script: Int] = [:]
         for scalar in text.unicodeScalars {
-            let script = Script(of: scalar)
-            if script != .unknown {
+            let script = Script.of(scalar)
+            if script != Script.unknown {
                 counts[script, default: 0] += 1
             }
         }
-        return counts.max(by: { $0.value < $1.value })?.key ?? .latin
+        return counts.max(by: { $0.value < $1.value })?.key ?? Script.latin
     }
 
     private enum Script {
