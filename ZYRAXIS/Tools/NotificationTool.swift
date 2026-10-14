@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import UserNotifications
 
 /// Read-only access to delivered notifications via UNUserNotificationCenter.
@@ -17,8 +18,9 @@ public struct NotificationTool: AgentTool, Sendable {
     public init() {}
 
     public func execute(input: ToolInput) async throws -> ToolOutput {
-        let limit = (input.arguments["limit"] as? Int) ?? 10
-        let includeContent = (input.arguments["includeContent"] as? Bool) ?? true
+        let args = try decodeArguments(input.rawJSON)
+        let limit = (args["limit"] as? Int) ?? 10
+        let includeContent = (args["includeContent"] as? Bool) ?? true
 
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
@@ -49,6 +51,14 @@ public struct NotificationTool: AgentTool, Sendable {
         let data = try JSONSerialization.data(withJSONObject: ["notifications": items, "count": items.count], options: .prettyPrinted)
         return ToolOutput(text: String(data: data, encoding: .utf8) ?? "{}")
     }
+
+    private func decodeArguments(_ json: String) throws -> [String: Any] {
+        guard let data = json.data(using: .utf8),
+              let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return [:]
+        }
+        return obj
+    }
 }
 
 /// Alarm tool — iOS does NOT let third-party apps set alarms directly.
@@ -61,16 +71,17 @@ public struct AlarmTool: AgentTool, Sendable {
         "Opens the Clock app to set an alarm. iOS does not allow third-party apps to set alarms directly — this opens the system Clock app where you can create it."
     }
     public var parametersJSONSchema: String { "{\"type\":\"object\",\"properties\":{\"time\":{\"type\":\"string\",\"description\":\"Alarm time in HH:mm format (24h), e.g. 07:30\"},\"label\":{\"type\":\"string\",\"description\":\"Optional label for the alarm\"}}}" }
-    public var riskLevel: ToolRiskLevel { .requiresConfirmation }
+    public var riskLevel: ToolRiskLevel { .reversible }
     public var requiresConfirmation: Bool { true }
 
     public init() {}
 
     public func execute(input: ToolInput) async throws -> ToolOutput {
-        guard let time = input.arguments["time"] as? String else {
+        let args = try decodeArguments(input.rawJSON)
+        guard let time = args["time"] as? String else {
             return ToolOutput(text: "Missing required 'time' parameter (HH:mm).")
         }
-        let label = (input.arguments["label"] as? String) ?? "ZYRAXIS alarm"
+        let label = (args["label"] as? String) ?? "ZYRAXIS alarm"
 
         // Validate HH:mm format
         let parts = time.split(separator: ":")
@@ -83,9 +94,9 @@ public struct AlarmTool: AgentTool, Sendable {
         // Open Clock app via Shortcuts URL (most reliable) or generic clock link
         // Clock app doesn't have a public deep link for "create alarm", but Shortcuts can.
         // Fallback: open Shortcuts app with a pre-filled alarm creation shortcut.
-        let encodedLabel = label.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let encodedTime = time.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let shortcutName = "Create Alarm".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let encodedLabel = label.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed) ?? ""
+        let encodedTime = time.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed) ?? ""
+        let shortcutName = "Create Alarm".addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed) ?? ""
         let shortcutURL = "shortcuts://run-shortcut?name=\(shortcutName)&input=\(encodedTime)%20\(encodedLabel)"
 
         let urls = [
@@ -104,6 +115,14 @@ public struct AlarmTool: AgentTool, Sendable {
 
         return ToolOutput(text: "Opened Clock/Shortcuts app to set alarm for \(time) (\(label)). Please confirm in the app.")
     }
+
+    private func decodeArguments(_ json: String) throws -> [String: Any] {
+        guard let data = json.data(using: .utf8),
+              let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return [:]
+        }
+        return obj
+    }
 }
 
 /// Email tool — iOS does NOT let third-party apps read Mail.app data.
@@ -121,9 +140,10 @@ public struct EmailTool: AgentTool, Sendable {
     public init() {}
 
     public func execute(input: ToolInput) async throws -> ToolOutput {
-        let to = (input.arguments["to"] as? String) ?? ""
-        let subject = (input.arguments["subject"] as? String) ?? ""
-        let body = (input.arguments["body"] as? String) ?? ""
+        let args = try decodeArguments(input.rawJSON)
+        let to = (args["to"] as? String) ?? ""
+        let subject = (args["subject"] as? String) ?? ""
+        let body = (args["body"] as? String) ?? ""
 
         var components = URLComponents(string: "mailto:\(to)")!
         var queryItems: [URLQueryItem] = []
@@ -140,5 +160,13 @@ public struct EmailTool: AgentTool, Sendable {
         }
 
         return ToolOutput(text: "Opened Mail app" + (to.isEmpty ? "" : " to \(to)") + ".")
+    }
+
+    private func decodeArguments(_ json: String) throws -> [String: Any] {
+        guard let data = json.data(using: .utf8),
+              let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return [:]
+        }
+        return obj
     }
 }
