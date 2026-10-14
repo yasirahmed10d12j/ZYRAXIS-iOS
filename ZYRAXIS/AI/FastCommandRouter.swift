@@ -115,7 +115,7 @@ public struct OpenRequest: Equatable, Sendable {
     /// Fixed Instagram front page (universal link, no user input).
     public static func instagram() -> OpenRequest? {
         guard let url = URL(string: "https://www.instagram.com/") else { return nil }
-        return OpenRequest(url: url, label: "Instagram", kind: .website)
+        return OpenRequest(url: url, label: "Instagram", kind: .instagram)
     }
 
     /// Fixed WhatsApp front page (universal link, no user input).
@@ -167,12 +167,6 @@ public struct OpenRequest: Equatable, Sendable {
     public static func chrome() -> OpenRequest? {
         guard let url = URL(string: "https://www.google.com/chrome/") else { return nil }
         return OpenRequest(url: url, label: "Chrome", kind: .chrome)
-    }
-
-    /// Instagram via universal link.
-    public static func instagram() -> OpenRequest? {
-        guard let url = URL(string: "https://www.instagram.com/") else { return nil }
-        return OpenRequest(url: url, label: "Instagram", kind: .instagram)
     }
 
     /// Photos app via universal link.

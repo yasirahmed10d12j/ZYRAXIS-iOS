@@ -86,7 +86,7 @@ public struct SilenceDetector: Equatable, Sendable {
 }
 
 @MainActor
-public final class VoiceManagerImpl: ObservableObject, VoiceManager {
+public final class VoiceManagerImpl: ObservableObject, @preconcurrency VoiceManager {
 
     @Published public private(set) var state: VoiceState = .idle
 

@@ -47,7 +47,7 @@ public struct BackendChatResponse: Codable, Equatable, Sendable {
 /// - TLS/WSS validation is the URLSession default (never bypassed).
 /// - Auth headers are built per request and never logged (see ZyraxisLogger).
 @MainActor
-public final class BackendAIService: AIService {
+public final class BackendAIService: @preconcurrency AIService {
 
     public let provider: AIProvider = .customBackend
 

@@ -16,7 +16,7 @@ import AVFoundation
 ///
 /// UNVERIFIED — REQUIRES XCODE/DEVICE: never run (no Xcode/audio here).
 @MainActor
-public final class AVSpeechService: NSObject, SpeechService {
+public final class AVSpeechService: NSObject, @preconcurrency SpeechService {
 
     public var isSpeaking: Bool { synthesizer.isSpeaking }
 

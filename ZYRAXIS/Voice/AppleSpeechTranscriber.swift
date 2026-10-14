@@ -21,7 +21,7 @@ import Speech
 /// UNVERIFIED — REQUIRES XCODE/DEVICE: compiles against Apple SDKs only;
 /// never run (no Xcode, no microphone in this environment).
 @MainActor
-public final class AppleSpeechTranscriber: ObservableObject, STTProvider {
+public final class AppleSpeechTranscriber: ObservableObject, @preconcurrency STTProvider {
 
     public var isAvailable: Bool {
         makeRecognizer()?.isAvailable ?? false

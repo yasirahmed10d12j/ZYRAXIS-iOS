@@ -1,5 +1,5 @@
 import Foundation
-import UserNotifications
+@preconcurrency import UserNotifications
 
 /// Reminder-notification abstraction over UserNotifications.
 public protocol NotificationService: Sendable {

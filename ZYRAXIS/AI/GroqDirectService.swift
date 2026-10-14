@@ -9,7 +9,7 @@ import Foundation
 ///   `NetworkError`. Missing/empty key throws `.unauthorized` with no network.
 /// - No WebSocket/audio path: Groq transcription is NOT implemented here.
 @MainActor
-public final class GroqDirectService: AIService {
+public final class GroqDirectService: @preconcurrency AIService {
 
     public let provider: AIProvider = .groq
 

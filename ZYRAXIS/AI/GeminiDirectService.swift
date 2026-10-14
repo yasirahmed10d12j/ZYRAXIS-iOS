@@ -12,7 +12,7 @@ import Foundation
 ///   network attempt.
 /// - No WebSocket/audio: Gemini Live API is NOT implemented (see README).
 @MainActor
-public final class GeminiDirectService: AIService {
+public final class GeminiDirectService: @preconcurrency AIService {
 
     public let provider: AIProvider = .gemini
 

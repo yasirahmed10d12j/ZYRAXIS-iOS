@@ -40,7 +40,7 @@ public extension WebSocketManager {
 }
 
 @MainActor
-public final class URLSessionWebSocketManager: ObservableObject, WebSocketManager {
+public final class URLSessionWebSocketManager: ObservableObject, @preconcurrency WebSocketManager {
 
     @Published public private(set) var state: ConnectionState = .disconnected
 
