@@ -34,6 +34,11 @@ final class StubURLProtocol: URLProtocol {
 
     static var handler: ((URLRequest) -> Stub?)?
     static var recordedRequests: [URLRequest] = []
+    // Raw body bytes per recorded request, captured in startLoading (same
+    // order as recordedRequests). URLSession moves httpBody into
+    // httpBodyStream before the protocol sees it, so reading httpBody alone
+    // yields nil — capture here instead of re-reading later.
+    static var recordedBodies: [Data] = []
     private var cancelled = false
 
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -42,6 +47,7 @@ final class StubURLProtocol: URLProtocol {
 
     override func startLoading() {
         Self.recordedRequests.append(request)
+        Self.recordedBodies.append(Self.captureBody(of: request))
         guard let stub = Self.handler?(request) else {
             client?.urlProtocol(self, didFailWithError: URLError(.badURL))
             return
@@ -81,6 +87,31 @@ final class StubURLProtocol: URLProtocol {
     static func reset() {
         handler = nil
         recordedRequests = []
+        recordedBodies = []
+    }
+
+    /// Snapshot the request body at record time: prefer httpBody, else drain
+    /// httpBodyStream once. Bounded reads (no hangs); consuming the stream is
+    /// harmless here because stubbed responses are canned, never echoing it.
+    private static func captureBody(of request: URLRequest) -> Data {
+        if let body = request.httpBody {
+            return body
+        }
+        guard let stream = request.httpBodyStream else {
+            return Data()
+        }
+        var out = Data()
+        stream.open()
+        defer { stream.close() }
+        var budget = 8 * 1024 * 1024
+        var buffer = [UInt8](repeating: 0, count: 32 * 1024)
+        while budget > 0, stream.hasBytesAvailable {
+            let n = stream.read(&buffer, maxLength: buffer.count)
+            if n <= 0 { break }
+            out.append(buffer, count: n)
+            budget -= n
+        }
+        return out
     }
 }
 
@@ -206,8 +237,8 @@ final class DirectProviderTests: XCTestCase {
     }
 
     private func sentBody() throws -> [String: Any] {
-        let sent = try XCTUnwrap(StubURLProtocol.recordedRequests.first)
-        let raw = try XCTUnwrap(sent.httpBody)
+        _ = try XCTUnwrap(StubURLProtocol.recordedRequests.first, "no recorded request")
+        let raw = try XCTUnwrap(StubURLProtocol.recordedBodies.first, "no captured body bytes")
         let json = try JSONSerialization.jsonObject(with: raw)
         return try XCTUnwrap(json as? [String: Any])
     }
@@ -298,7 +329,7 @@ final class DirectProviderTests: XCTestCase {
             _ = try await svc.sendMessage(Self.request())
             XCTFail("expected rate limit")
         } catch let e as NetworkError {
-            XCTAssertEqual(e, .server(statusCode: 429, message: nil))
+            XCTAssertEqual(e, .server(statusCode: 429, message: ""))
             XCTAssertTrue(AssistantErrorMapper.userMessage(for: e).contains("rate-limiting"))
         } catch {
             XCTFail("wrong error \(error)")
@@ -313,7 +344,7 @@ final class DirectProviderTests: XCTestCase {
             _ = try await svc.sendMessage(Self.request())
             XCTFail("expected server error")
         } catch let e as NetworkError {
-            XCTAssertEqual(e, .server(statusCode: 500, message: nil))
+            XCTAssertEqual(e, .server(statusCode: 500, message: ""))
         } catch {
             XCTFail("wrong error \(error)")
         }
@@ -429,7 +460,7 @@ final class DirectProviderTests: XCTestCase {
             _ = try await svc.sendMessage(Self.request())
             XCTFail("expected 429")
         } catch let e as NetworkError {
-            XCTAssertEqual(e, .server(statusCode: 429, message: nil))
+            XCTAssertEqual(e, .server(statusCode: 429, message: ""))
         } catch {
             XCTFail("wrong error \(error)")
         }
@@ -438,7 +469,7 @@ final class DirectProviderTests: XCTestCase {
             _ = try await svc.sendMessage(Self.request())
             XCTFail("expected 500")
         } catch let e as NetworkError {
-            XCTAssertEqual(e, .server(statusCode: 500, message: nil))
+            XCTAssertEqual(e, .server(statusCode: 500, message: ""))
         } catch {
             XCTFail("wrong error \(error)")
         }
