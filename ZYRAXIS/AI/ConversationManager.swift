@@ -29,6 +29,10 @@ public final class ConversationManager: ObservableObject {
     /// forwarded here. Set by the UI layer (which owns VoiceManager).
     public var voiceControlHandler: ((FastCommandMicAction) -> Void)?
 
+    /// Opens validated external URLs from fast-path open commands. Set by the
+    /// UI layer (which owns UIApplication); nil in tests unless injected.
+    public var openURLHandler: ((OpenRequest) -> Void)?
+
     /// Future TTS hook. Nil in Phase 2 → text-only responses (state still
     /// flows PROCESSING → SPEAKING → IDLE momentarily).
     public var speechService: (any SpeechService)?
@@ -117,6 +121,11 @@ public final class ConversationManager: ObservableObject {
             messages.append(ConversationMessage(role: .user, text: trimmed))
             voiceControlHandler?(action)
             pushActivity(.init(kind: .listening, title: action == .enableMic ? "Mic requested on" : "Mic requested off"))
+            return
+        case .open(let request):
+            messages.append(ConversationMessage(role: .user, text: trimmed))
+            openURLHandler?(request)
+            pushActivity(.init(kind: .system, title: "Opening \(request.label)"))
             return
         case .none:
             break

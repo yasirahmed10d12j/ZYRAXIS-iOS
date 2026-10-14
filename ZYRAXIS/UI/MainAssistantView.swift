@@ -113,6 +113,18 @@ public struct MainAssistantView: View {
                     }
                 }
             }
+            deps.openURLHandler = { [weak deps] request in
+                UIApplication.shared.open(request.url, options: [:]) { [weak deps] opened in
+                    Task { @MainActor [weak deps] in
+                        deps?.pushActivity(.init(
+                            kind: .system,
+                            title: opened
+                                ? "Opened \(request.label)"
+                                : "Couldn't open \(request.label) on this iPhone"
+                        ))
+                    }
+                }
+            }
         }
         .onReceive(deps.voiceManager.voiceStatePublisher) { vs in
             if case .listening(let lvl) = vs {

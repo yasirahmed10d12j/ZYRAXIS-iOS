@@ -226,4 +226,47 @@ final class ConversationEngineTests: XCTestCase {
         let roles = manager.messages.map { $0.role }
         XCTAssertEqual(roles, [.user, .assistant, .user, .assistant])
     }
+
+    func testOpenCommandCallsHandlerWithoutAI() async {
+        let (manager, scripted, sm, _) = makeManager { id in
+            [.completed(requestId: id, response: AIResponse(text: "SHOULD NOT HAPPEN", requestId: id))]
+        }
+        var opened: [OpenRequest] = []
+        manager.openURLHandler = { opened.append($0) }
+        await manager.send("directions to paris")
+        XCTAssertEqual(scripted.callCount, 0, "open path must not call the AI service")
+        XCTAssertEqual(opened.count, 1)
+        XCTAssertEqual(opened[0].kind, .maps)
+        XCTAssertEqual(opened[0].url.host ?? "", "maps.apple.com")
+        XCTAssertTrue(manager.activities.contains(where: { $0.title.contains("Opening") }))
+        XCTAssertEqual(sm.state, .idle)
+    }
+
+    func testUnsupportedOpenFallsThroughToAI() async {
+        // "open settings" has no public URL scheme: no handler call, and the
+        // message still reaches the engine like normal conversation.
+        let (manager, _, _, _) = makeManager { id in
+            [.completed(requestId: id, response: AIResponse(text: "ok", requestId: id))]
+        }
+        var opened: [OpenRequest] = []
+        manager.openURLHandler = { opened.append($0) }
+        await manager.send("open settings")
+        XCTAssertTrue(opened.isEmpty)
+        XCTAssertTrue(manager.messages.contains(where: { $0.role == .user && $0.text == "open settings" }))
+    }
+
+    func testYouTubeCommandUsesHTTPSWithoutAIFallback() async {
+        // Recognized open command: exactly one handler call, no AI request,
+        // and no youtube:// custom scheme anywhere in the URL.
+        let (manager, scripted, _, _) = makeManager { id in
+            [.completed(requestId: id, response: AIResponse(text: "SHOULD NOT HAPPEN", requestId: id))]
+        }
+        var opened: [OpenRequest] = []
+        manager.openURLHandler = { opened.append($0) }
+        await manager.send("Open YouTube")
+        XCTAssertEqual(scripted.callCount, 0, "recognized open must not call the AI service")
+        XCTAssertEqual(opened.count, 1)
+        XCTAssertEqual(opened[0].url.absoluteString, "https://www.youtube.com/")
+        XCTAssertFalse(opened[0].url.absoluteString.hasPrefix("youtube://"))
+    }
 }

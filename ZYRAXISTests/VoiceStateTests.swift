@@ -1,9 +1,13 @@
 import XCTest
+import Combine
+import AVFoundation
 @testable import ZYRAXIS
 
 /// Voice hardware (mic, AVAudioSession) cannot run in unit tests or on
 /// Windows — so these tests cover the pure, hardware-free contracts:
 /// state labels, capture flags, and legal assistant transitions for voice.
+/// @MainActor: VoiceManagerImpl is MainActor-isolated (like the app wiring).
+@MainActor
 final class VoiceStateTests: XCTestCase {
 
     func testDisplayLabels() {
@@ -39,5 +43,52 @@ final class VoiceStateTests: XCTestCase {
                 XCTFail("expected listening")
             }
         }
+    }
+
+    func testCaptureAudioConfigUsesLoudspeakerSafeDefaults() {
+        // Responses must come out the loudspeaker: .voiceChat mode routes
+        // output earpiece-quiet (reads as "TTS never speaks").
+        XCTAssertEqual(VoiceManagerImpl.captureCategory.rawValue, AVAudioSession.Category.playAndRecord.rawValue)
+        XCTAssertEqual(VoiceManagerImpl.captureMode.rawValue, AVAudioSession.Mode.default.rawValue)
+        XCTAssertTrue(VoiceManagerImpl.captureOptions.contains(.defaultToSpeaker))
+        XCTAssertTrue(VoiceManagerImpl.captureOptions.contains(.allowBluetoothA2DP))
+    }
+
+    func testForwardingSendsMonoSamples() {
+        // copyMonoSamples extracts channel 0 only, so forwarding must declare
+        // channels == 1 even for stereo taps (other channels would reach the
+        // recognizer uninitialized).
+        let manager = VoiceManagerImpl()
+        let spy = SpySTTProvider()
+        manager.transcriber = spy
+        manager.forwardTranscription(samples: [0.25, 0.5], sampleRate: 44100, channels: 2)
+        XCTAssertEqual(spy.lastSamples, [0.25, 0.5])
+        XCTAssertEqual(spy.lastChannels, 1)
+        XCTAssertEqual(spy.lastSampleRate, 44100, accuracy: 0.001)
+    }
+}
+
+/// STT test double: records ingest calls, performs no recognition.
+private final class SpySTTProvider: STTProvider {
+    var lastSamples: [Float] = []
+    var lastSampleRate: Double = 0
+    var lastChannels: Int = 0
+
+    var isAvailable: Bool { true }
+
+    var transcripts: AnyPublisher<STTTranscript, Never> {
+        Empty().eraseToAnyPublisher()
+    }
+
+    func requestPermission() async -> Bool { true }
+
+    func start() throws {}
+
+    func stop() {}
+
+    func ingestAudio(samples: [Float], sampleRate: Double, channels: Int) {
+        lastSamples = samples
+        lastSampleRate = sampleRate
+        lastChannels = channels
     }
 }

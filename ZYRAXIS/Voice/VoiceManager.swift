@@ -64,9 +64,19 @@ public final class VoiceManagerImpl: ObservableObject, VoiceManager {
 
     // MARK: - Session + capture
 
+    /// Single shared audio configuration for BOTH mic capture and spoken
+    /// responses. The mic needs play-and-record; responses must come out the
+    /// LOUDSPEAKER (`.voiceChat` mode routes output earpiece-quiet, which
+    /// reads as "TTS never speaks"). Bluetooth stays available for headsets.
+    /// Known limitation: speaker bleed into a hot mic can self-transcribe
+    /// (no echo gate) — stopping the mic before long replies avoids it.
+    static let captureCategory: AVAudioSession.Category = .playAndRecord
+    static let captureMode: AVAudioSession.Mode = .default
+    static let captureOptions: AVAudioSession.CategoryOptions = [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
+
     public func configureAudioSession() throws {
         do {
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth, .allowBluetoothA2DP])
+            try session.setCategory(Self.captureCategory, mode: Self.captureMode, options: Self.captureOptions)
             try session.setActive(true, options: [])
         } catch {
             state = .failed(error.localizedDescription)
@@ -130,9 +140,14 @@ public final class VoiceManagerImpl: ObservableObject, VoiceManager {
 
     /// Forwards copied samples to the attached transcriber (MainActor —
     /// called from the tap's MainActor hop with Sendable values only).
-    private func forwardTranscription(samples: [Float], sampleRate: Double, channels: Int) {
+    /// Internal (not private) so unit tests can prove the mono contract.
+    /// Samples are ALWAYS mono channel-0 extracts (see `copyMonoSamples`),
+    /// so channels is hardcoded to 1: forwarding the tap's channel count
+    /// would leave the recognizer's other channels uninitialized when the
+    /// input is stereo. The `channels` parameter documents the tap facts.
+    func forwardTranscription(samples: [Float], sampleRate: Double, channels: Int) {
         guard !samples.isEmpty else { return }
-        transcriber?.ingestAudio(samples: samples, sampleRate: sampleRate, channels: channels)
+        transcriber?.ingestAudio(samples: samples, sampleRate: sampleRate, channels: 1)
     }
 
     // MARK: - Interruptions (calls, Siri, alarm...)

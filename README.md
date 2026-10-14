@@ -382,6 +382,51 @@ Do steps in order. Stop and fix at the first failure — do not skip ahead.
     `tool_result` error back; register a read-only tool later to verify
     the execution path (no destructive tools, ever, on this client).
 
+## Voice, spoken replies, and open commands (device setup)
+
+If the mic meters move but nothing happens, work through this list — every
+item below is enforced by the code, not assumed:
+
+1. **Mic permission**: tap the mic button → iOS asks for microphone access.
+   Denied = `MIC DENIED` badge + "Microphone permission denied" error.
+   Re-enable in iOS Settings → ZYRAXIS → Microphone.
+2. **Live transcription toggle** (default OFF): Settings → Voice &
+   Microphone → **Live transcription (STT)**. Without it the mic is
+   level-metering only by design — speech is never processed.
+3. **Speech recognition permission**: with the toggle on, opening the mic
+   asks for Speech Recognition separately. Denied = "Speech recognition
+   denied" activity; the mic stays open for levels. Re-enable in iOS
+   Settings → ZYRAXIS → Speech Recognition. Note: recognition is
+   server-based and needs internet.
+4. **Speak, then close the mic**: the mic-close tap is the utterance
+   boundary — the trailing final transcript is what gets sent.
+5. **Voice responses toggle** (default OFF): Settings → **Voice responses
+   (TTS)**. Without it replies are text-only. Spoken replies use the
+   loudspeaker (`playAndRecord` + `defaultToSpeaker`); if speech is
+   inaudible, raise media volume and confirm the toggle.
+6. A phone call, Siri, or alarm stops capture (`MIC STOPPED`) and never
+   auto-resumes — tap the mic again. This is deliberate (privacy).
+
+### Open commands (no third-party app access)
+
+Fast commands that open iPhone destinations through Apple-supported schemes
+and universal links only. Say exactly:
+
+- `open example.com` / `go to example.com` → website (Safari)
+- `call 5551234567` → Phone (system confirmation sheet)
+- `text 5551234567` → Messages · `email a@b.com` → Mail
+- `directions to paris` / `navigate to …` / `map of …` → Apple Maps
+- `facetime 5551234567` → FaceTime · `open app store` → App Store
+- `open youtube` / `youtube cats` → YouTube (HTTPS universal link: opens the
+  app when installed, Safari otherwise — never the `youtube://` custom
+  scheme, which fails instantly without the app)
+
+Anything unvalidated (`open settings`, `call abc`, unknown apps) is NOT
+opened — it falls through to the AI instead, and a failed open reports
+"Couldn't open … on this iPhone". iOS Settings and arbitrary third-party
+apps cannot be opened (sandbox; no public scheme) — requests for them go to
+the AI, never to a bypass.
+
 ## Codemagic CI/CD setup
 
 `codemagic.yaml` at the repo root defines two workflows (verified against
