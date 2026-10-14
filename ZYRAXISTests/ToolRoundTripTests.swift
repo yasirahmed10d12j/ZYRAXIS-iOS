@@ -140,4 +140,81 @@ final class ToolRoundTripTests: XCTestCase {
             XCTFail("expected CancellationError, got \(error)")
         }
     }
+
+    func testDeviceInfoSnapshotInvariants() {
+        // Real values on any device/simulator: total RAM and CPU cores always
+        // exist; storage exists with free <= total when readable.
+        let snap = DeviceInfoProvider.collect()
+        XCTAssertFalse(snap.modelIdentifier.isEmpty)
+        XCTAssertFalse(snap.osVersion.isEmpty)
+        XCTAssertGreaterThanOrEqual(snap.cpuCount, 1)
+        XCTAssertGreaterThan(snap.totalMemoryBytes, 0)
+        if let total = snap.storageTotalBytes, let free = snap.storageFreeBytes {
+            XCTAssertLessThanOrEqual(free, total)
+        }
+        if let level = snap.batteryLevel {
+            XCTAssertGreaterThanOrEqual(level, 0)
+            XCTAssertLessThanOrEqual(level, 1)
+        }
+    }
+
+    func testDeviceInfoDisplayHelpers() {
+        XCTAssertEqual(DeviceInfoProvider.displayBytes(nil), "—")
+        XCTAssertFalse(DeviceInfoProvider.displayBytes(1024).isEmpty)
+        XCTAssertEqual(DeviceInfoProvider.displayBattery(nil), "—")
+        XCTAssertEqual(DeviceInfoProvider.displayBattery(0.5), "50%")
+        XCTAssertEqual(DeviceInfoProvider.thermalLabel(.nominal), "nominal")
+        XCTAssertEqual(DeviceInfoProvider.thermalLabel(.fair), "fair")
+        XCTAssertEqual(DeviceInfoProvider.thermalLabel(.serious), "serious")
+        XCTAssertEqual(DeviceInfoProvider.thermalLabel(.critical), "critical")
+    }
+
+    func testDeviceInfoToolRoundTrip() async throws {
+        let registry = DefaultToolRegistry()
+        await registry.register(DeviceInfoTool())
+        let result = try await registry.execute(call: ToolCall(toolName: "get_device_info", argumentsJSON: "{}"))
+        XCTAssertTrue(result.succeeded)
+        let data = try XCTUnwrap(result.outputJSON.data(using: .utf8))
+        let snapshot = try JSONDecoder().decode(DeviceSnapshot.self, from: data)
+        XCTAssertFalse(snapshot.modelIdentifier.isEmpty)
+        XCTAssertGreaterThanOrEqual(snapshot.cpuCount, 1)
+    }
+
+    func testNotificationToolDescriptor() {
+        let tool = NotificationTool()
+        XCTAssertEqual(tool.name, "get_notifications")
+        XCTAssertEqual(tool.riskLevel, .readOnly)
+        XCTAssertFalse(tool.requiresConfirmation)
+    }
+
+    func testAlarmToolDescriptor() {
+        let tool = AlarmTool()
+        XCTAssertEqual(tool.name, "set_alarm")
+        XCTAssertEqual(tool.riskLevel, .requiresConfirmation)
+        XCTAssertTrue(tool.requiresConfirmation)
+    }
+
+    func testEmailToolDescriptor() {
+        let tool = EmailTool()
+        XCTAssertEqual(tool.name, "open_mail")
+        XCTAssertEqual(tool.riskLevel, .readOnly)
+        XCTAssertFalse(tool.requiresConfirmation)
+    }
+
+    func testAlarmToolInvalidTimeRejected() async throws {
+        let registry = DefaultToolRegistry()
+        await registry.register(AlarmTool())
+        let result = try await registry.execute(call: ToolCall(toolName: "set_alarm", argumentsJSON: "{\"time\":\"invalid\"}"))
+        XCTAssertFalse(result.succeeded)
+        XCTAssertTrue(result.outputJSON.contains("Invalid time format") || result.error?.contains("Invalid time format") == true)
+    }
+
+    func testAlarmToolValidTimeReturnsOpenedMessage() async throws {
+        let registry = DefaultToolRegistry()
+        await registry.register(AlarmTool())
+        let result = try await registry.execute(call: ToolCall(toolName: "set_alarm", argumentsJSON: "{\"time\":\"07:30\",\"label\":\"test\"}"))
+        // Note: actually opens Clock app; we only verify it returns success with the message
+        XCTAssertTrue(result.succeeded)
+        XCTAssertTrue(result.outputJSON.contains("Opened Clock") || result.outputJSON.contains("07:30"))
+    }
 }

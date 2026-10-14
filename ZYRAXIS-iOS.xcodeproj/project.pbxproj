@@ -46,6 +46,8 @@
 		24E60976CA38517C9615C5D3 /* ZyraxisTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DA606ECCF1F8D6FE1F1E951 /* ZyraxisTask.swift */; };
 		60000EBE54BAB2A27047A662 /* AppInfoTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BEE9584661F1F8495D6B67B /* AppInfoTool.swift */; };
 		AA75FC882900C201DE23DF5C /* ToolRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D60C0B6FBA1A0FA14ED7EF /* ToolRegistry.swift */; };
+		D3E71CE1234567890ABCDEF1 /* DeviceInfoTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E71CE1234567890ABCDEF0 /* DeviceInfoTool.swift */; };
+		F8E71CE1234567890ABCDEF2 /* NotificationTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8E71CE1234567890ABCDEF3 /* NotificationTool.swift */; };
 		F67DE84C3D88AABBD4BA29AE /* AssistantActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 392FD4DF1E9DB7082F22224E /* AssistantActivity.swift */; };
 		26FD20B0C9F3E6BEAA9088C6 /* ConversationMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50AD0C80A3B3B27BCFC5101B /* ConversationMessage.swift */; };
 		C1E6209BD54C3C276DA7CF1F /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 217AAB731D3EE54071866587 /* NotificationService.swift */; };
@@ -127,6 +129,8 @@
 		1DA606ECCF1F8D6FE1F1E951 /* ZyraxisTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ZyraxisTask.swift; path = ZyraxisTask.swift; sourceTree = "<group>"; };
 		2BEE9584661F1F8495D6B67B /* AppInfoTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppInfoTool.swift; path = AppInfoTool.swift; sourceTree = "<group>"; };
 		48D60C0B6FBA1A0FA14ED7EF /* ToolRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ToolRegistry.swift; path = ToolRegistry.swift; sourceTree = "<group>"; };
+		F8E71CE1234567890ABCDEF3 /* NotificationTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotificationTool.swift; path = NotificationTool.swift; sourceTree = "<group>"; };
+		D3E71CE1234567890ABCDEF0 /* DeviceInfoTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DeviceInfoTool.swift; path = DeviceInfoTool.swift; sourceTree = "<group>"; };
 		392FD4DF1E9DB7082F22224E /* AssistantActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AssistantActivity.swift; path = AssistantActivity.swift; sourceTree = "<group>"; };
 		50AD0C80A3B3B27BCFC5101B /* ConversationMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ConversationMessage.swift; path = ConversationMessage.swift; sourceTree = "<group>"; };
 		217AAB731D3EE54071866587 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotificationService.swift; path = NotificationService.swift; sourceTree = "<group>"; };
@@ -346,6 +350,8 @@
 			children = (
 				2BEE9584661F1F8495D6B67B /* AppInfoTool.swift */,
 				48D60C0B6FBA1A0FA14ED7EF /* ToolRegistry.swift */,
+				D3E71CE1234567890ABCDEF0 /* DeviceInfoTool.swift */,
+				F8E71CE1234567890ABCDEF3 /* NotificationTool.swift */,
 			);
 			name = Tools;
 			path = Tools;
@@ -596,6 +602,8 @@
 				24E60976CA38517C9615C5D3 /* ZyraxisTask.swift in Sources */,
 				60000EBE54BAB2A27047A662 /* AppInfoTool.swift in Sources */,
 				AA75FC882900C201DE23DF5C /* ToolRegistry.swift in Sources */,
+				D3E71CE1234567890ABCDEF1 /* DeviceInfoTool.swift in Sources */,
+				F8E71CE1234567890ABCDEF2 /* NotificationTool.swift in Sources */,
 				F67DE84C3D88AABBD4BA29AE /* AssistantActivity.swift in Sources */,
 				26FD20B0C9F3E6BEAA9088C6 /* ConversationMessage.swift in Sources */,
 				C1E6209BD54C3C276DA7CF1F /* NotificationService.swift in Sources */,

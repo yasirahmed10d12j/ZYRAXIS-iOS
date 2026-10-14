@@ -151,7 +151,7 @@ public final class AppDependencies: ObservableObject {
         let memory: any MemoryService = InMemoryMemoryService()
         let notifications: any NotificationService = UNNotificationService()
         let tasks: any TaskService = LocalTaskService(notifications: notifications)
-        let tools: any ToolRegistry = DefaultToolRegistry(seed: [AppInfoTool()])
+        let tools: any ToolRegistry = DefaultToolRegistry(seed: [AppInfoTool(), DeviceInfoTool(), NotificationTool(), AlarmTool(), EmailTool()])
         let vision: any VisionService = UnimplementedVisionService()
         let sm = AssistantStateMachine()
         let deps = AppDependencies(

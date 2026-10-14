@@ -41,6 +41,10 @@ public final class ConversationManager: ObservableObject {
     /// (tests that never use it); contact commands then report an error.
     public var contactService: (any ContactService)?
 
+    /// Task store for reminder commands. Nil when unavailable; reminder
+    /// commands then report an error instead of pretending to save.
+    public var taskService: (any TaskService)?
+
     /// True only while the in-flight turn was voice-initiated (STT final).
     /// Typed turns never set it, so hands-free re-listening never fires
     /// after typing. Consumed (reset) whenever it triggers or cancels.
@@ -153,6 +157,18 @@ public final class ConversationManager: ObservableObject {
         case .whatsAppContact(let name):
             messages.append(ConversationMessage(role: .user, text: trimmed))
             await handleContactCommand(name: name, makeRequest: OpenRequest.whatsApp)
+            return
+        case .system(let action):
+            messages.append(ConversationMessage(role: .user, text: trimmed))
+            await handleSystemAction(action)
+            return
+        case .remind(let text, let dueDate):
+            messages.append(ConversationMessage(role: .user, text: trimmed))
+            await handleReminder(text: text, dueDate: dueDate)
+            return
+        case .myReminders:
+            messages.append(ConversationMessage(role: .user, text: trimmed))
+            await handleMyReminders()
             return
         case .none:
             break
@@ -477,6 +493,64 @@ public final class ConversationManager: ObservableObject {
         }
         openURLHandler?(request)
         pushActivity(.init(kind: .system, title: "Opening \(request.label)"))
+    }
+
+    /// Brightness change via UIScreen (public API). Volume is NOT settable
+    /// by third-party apps — answered honestly in the router, never executed.
+    private func handleSystemAction(_ action: SystemAction) async {
+        switch action {
+        case .brightness(let level):
+            await MainActor.run { UIScreen.main.brightness = level }
+            pushActivity(.init(kind: .system, title: "Brightness set to \(Int(level * 100))%"))
+        case .brightnessUp:
+            await MainActor.run { UIScreen.main.brightness = min(1.0, UIScreen.main.brightness + 0.15) }
+            pushActivity(.init(kind: .system, title: "Brightness increased"))
+        case .brightnessDown:
+            await MainActor.run { UIScreen.main.brightness = max(0.05, UIScreen.main.brightness - 0.15) }
+            pushActivity(.init(kind: .system, title: "Brightness decreased"))
+        }
+    }
+
+    /// Creates a reminder/task via TaskService (local with notifications).
+    private func handleReminder(text: String, dueDate: Date?) async {
+        guard let tasks = taskService else {
+            pushActivity(.init(kind: .error, title: "Reminders unavailable on this build"))
+            return
+        }
+        do {
+            let task = try await tasks.create(title: text, notes: nil, dueDate: dueDate, priority: .normal)
+            let when = dueDate.map { " for \(Self.timeString(from: $0))" } ?? ""
+            pushActivity(.init(kind: .system, title: "Reminder set\(when): \(task.title)"))
+        } catch {
+            pushActivity(.init(kind: .error, title: "Couldn't create reminder", detail: error.localizedDescription))
+        }
+    }
+
+    /// Reads back active reminders as a friendly assistant message.
+    private func handleMyReminders() async {
+        guard let tasks = taskService else {
+            pushActivity(.init(kind: .error, title: "Reminders unavailable on this build"))
+            return
+        }
+        do {
+            let list = try await tasks.list(filter: .active)
+            if list.isEmpty {
+                pushActivity(.init(kind: .system, title: "No active reminders"))
+            } else {
+                let summary = list.prefix(5).map { "• \($0.title)\($0.dueDate.map { " — due \(Self.timeString(from: $0))" } ?? "")" }.joined(separator: "\n")
+                await speak("You have \(list.count) active reminder\(list.count == 1 ? "" : "s"): \(summary)")
+                pushActivity(.init(kind: .system, title: "Active reminders", detail: summary))
+            }
+        } catch {
+            pushActivity(.init(kind: .error, title: "Couldn't read reminders", detail: error.localizedDescription))
+        }
+    }
+
+    static func timeString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: date)
     }
 
     /// Speaks via the wired SpeechService (nil by default → silent).

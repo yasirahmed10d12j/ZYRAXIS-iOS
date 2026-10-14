@@ -478,6 +478,91 @@ unlocked device (Keychain) and gives one final answer per question
 Tap **Share** next to Clear in the transcript header to open the iOS share
 sheet with the conversation as plain text (`[USER]` / `[ASSISTANT]` lines).
 
+## Device info (Settings → Device)
+
+Live iPhone facts, every value from a real iOS API: model, iOS/app version,
+CPU cores, total RAM, this app's footprint, storage free/total, battery
+level/state, thermal state, low-power mode. Tap **Refresh** to re-read.
+Also available to a connected backend as the read-only `get_device_info`
+tool (same honesty contract as `get_app_info`).
+
+Deliberately absent (no iOS API exists — shown nowhere rather than faked):
+CPU clock frequency, system-wide free/used RAM, network throughput.
+
+## Voice improvements (Phase 5)
+
+### Natural multilingual TTS
+- **Auto voice selection**: when no explicit voice is chosen, ZYRAXIS detects
+  the script of the outgoing text (Devanagari → Hindi, Arabic/Urdu → Urdu,
+  Latin → English) and picks a matching system voice automatically.
+- **Enhanced voices preferred**: downloadable "Enhanced" voices (higher quality,
+  more natural) are used when available for the detected language.
+- **Settings picker**: recommended voices (enhanced + locale-matched) shown
+  first, then all voices. `⭐` marks Enhanced quality.
+
+### Hindi/Urdu voice output fixed
+Previously, Hindi/Urdu replies fell back to the system default (often an
+English voice that cannot pronounce Devanagari/Arabic script). Now the
+auto-detection picks `hi-IN` or `ur-PK` voices when the reply contains those
+scripts, so spoken Hindi/Urdu actually works.
+
+### Human-like system prompt
+The AI system prompt now instructs a warm, concise, friend-like style:
+short sentences, plain words, mirrors your language (Hinglish/Hindi/Urdu/
+English), gentle humor welcome, never stiff or robotic. Replies are 1–2
+sentences unless you ask for more.
+
+## New app integrations (Settings → Device, or say the command)
+
+| Command | Opens |
+|---------|-------|
+| "open camera" / "take photo" | System Camera app |
+| "open youtube" | YouTube (HTTPS universal link → app if installed) |
+| "search youtube for techno gamerz" | YouTube results page for query |
+| "open instagram" | Instagram |
+| "open whatsapp" | WhatsApp |
+| "open telegram" | Telegram |
+| "open safari" / "open browser" | Safari |
+| "open chrome" | Chrome web page (opens in default browser) |
+| "open photos" / "gallery" | Photos app |
+| "open app store" | App Store |
+
+All use **HTTPS universal links** (no custom schemes) — open the native app
+when installed, fall back to Safari otherwise. No `canOpenURL` allowlist
+entries required.
+
+## Device control
+
+| Command | Action |
+|---------|--------|
+| "brightness up" / "brighter" / "increase brightness" | +15% brightness |
+| "brightness down" / "dim" / "decrease brightness" | −15% brightness |
+| "set brightness 50%" / "set brightness half" | Absolute level (5…100%) |
+| "volume up/down/mute" | **Honest answer**: "Volume can only be changed with the iPhone side buttons — iOS doesn't let apps set it." |
+
+Volume is **not settable** by third-party apps on iOS (public API does not
+exist). ZYRAXIS answers honestly instead of pretending.
+
+## Reminders / Tasks (local, with notifications)
+
+- "remind me to call mom in 10 minutes" → creates task with due date
+- "remind me to buy milk" → creates task (no due date)
+- "my reminders" / "show my tasks" → reads back active reminders (up to 5)
+- Tasks use `LocalTaskService` + `UNUserNotificationCenter` for alerts.
+- Backend sync is Phase 6.
+
+## Notifications / Alarms / Mail (read-only / honest)
+
+- `get_notifications` tool: returns recently delivered notifications (same
+  as Notification Center). Requires Notifications permission.
+- `set_alarm` tool: **opens Clock/Shortcuts app** — iOS does NOT let third-
+  party apps set alarms directly. User confirms in the system app.
+- `open_mail` tool: opens Mail app or `mailto:` compose — iOS does NOT let
+  third-party apps read existing emails.
+
+No private APIs, no fake data. Limitations are stated in the tool descriptions
+and spoken replies.
+
 ## Codemagic CI/CD setup
 
 `codemagic.yaml` at the repo root defines two workflows (verified against

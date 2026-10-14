@@ -14,6 +14,7 @@ public struct SettingsView: View {
     @State private var apiKeyInput: String = ""
     @State private var keychainStatus: String = ""
     @State private var showingResetConfirm = false
+    @State private var deviceSnapshot = DeviceInfoProvider.collect()
 
     public init() {}
 
@@ -63,6 +64,7 @@ public struct SettingsView: View {
                     appearanceSection
                     privacySection
                     memorySection
+                    deviceSection
                     connectionSection
                     #if DEBUG
                     diagnosticsSection
@@ -210,8 +212,15 @@ public struct SettingsView: View {
             Slider(value: binding(get: { $0.ttsRate }, set: { $0.ttsRate = $1 }), in: 0.25...1.0, step: 0.05)
             Picker("Voice", selection: binding(get: { $0.ttsVoiceIdentifier }, set: { $0.ttsVoiceIdentifier = $1 })) {
                 Text("System default").tag("")
-                ForEach(AVSpeechSynthesisVoice.speechVoices(), id: \.identifier) { voice in
-                    Text("\(voice.name) (\(voice.language))").tag(voice.identifier)
+                Section("Recommended (natural)") {
+                    ForEach(AVSpeechService.recommendedVoices(), id: \.identifier) { voice in
+                        Text("\(voice.name) (\(voice.language))\(voice.quality == .enhanced ? " ⭐" : "")").tag(voice.identifier)
+                    }
+                }
+                Section("All voices") {
+                    ForEach(AVSpeechService.allVoices(), id: \.identifier) { voice in
+                        Text("\(voice.name) (\(voice.language))").tag(voice.identifier)
+                    }
                 }
             }
             Toggle("Hands-free loop (auto-send + re-listen)", isOn: binding(get: { $0.handsFreeMode }, set: { $0.handsFreeMode = $1 }))
@@ -276,6 +285,29 @@ public struct SettingsView: View {
         Section("Memory") {
             Toggle("Personal memory", isOn: binding(get: { $0.memoryEnabled }, set: { $0.memoryEnabled = $1 }))
             Text("Phase 1 uses on-device in-memory storage. Backend sync arrives later.")
+                .font(ZyraxisTheme.caption())
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var deviceSection: some View {
+        Section("Device") {
+            LabeledRow(title: "Model", value: deviceSnapshot.modelIdentifier)
+            LabeledRow(title: "iOS", value: deviceSnapshot.osVersion)
+            LabeledRow(title: "App", value: deviceSnapshot.appVersion)
+            LabeledRow(title: "CPU cores", value: "\(deviceSnapshot.cpuCount)")
+            LabeledRow(title: "Memory (total)", value: DeviceInfoProvider.displayBytes(deviceSnapshot.totalMemoryBytes))
+            LabeledRow(title: "Memory (this app)", value: DeviceInfoProvider.displayBytes(deviceSnapshot.appFootprintBytes))
+            if let total = deviceSnapshot.storageTotalBytes, let free = deviceSnapshot.storageFreeBytes {
+                LabeledRow(title: "Storage free", value: "\(DeviceInfoProvider.displayBytes(free)) of \(DeviceInfoProvider.displayBytes(total))")
+            } else {
+                LabeledRow(title: "Storage free", value: "—")
+            }
+            LabeledRow(title: "Battery", value: "\(DeviceInfoProvider.displayBattery(deviceSnapshot.batteryLevel)) (\(deviceSnapshot.batteryState))")
+            LabeledRow(title: "Thermal state", value: deviceSnapshot.thermalState)
+            LabeledRow(title: "Low power mode", value: deviceSnapshot.lowPowerMode ? "ON" : "OFF")
+            Button("Refresh") { deviceSnapshot = DeviceInfoProvider.collect() }
+            Text("Live values from iOS. No CPU-frequency or system-wide free-RAM API exists — those numbers are not shown rather than faked.")
                 .font(ZyraxisTheme.caption())
                 .foregroundStyle(.secondary)
         }

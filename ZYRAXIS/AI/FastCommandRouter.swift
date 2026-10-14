@@ -24,6 +24,13 @@ public struct OpenRequest: Equatable, Sendable {
         case appStore
         case youTube
         case whatsApp
+        case camera
+        case telegram
+        case safari
+        case chrome
+        case instagram
+        case photos
+        case settings
     }
 
     public var url: URL
@@ -135,6 +142,45 @@ public struct OpenRequest: Equatable, Sendable {
         return OpenRequest(url: url, label: "Snapchat", kind: .website)
     }
 
+    /// Camera via system camera app (universal link for photo capture).
+    /// Uses `camera://` scheme which opens the system Camera app.
+    public static func camera() -> OpenRequest? {
+        guard let url = URL(string: "camera://") else { return nil }
+        return OpenRequest(url: url, label: "Camera", kind: .camera)
+    }
+
+    /// Telegram universal link — opens the Telegram app if installed,
+    /// falls back to web. No scheme allowlist needed for HTTPS.
+    public static func telegram() -> OpenRequest? {
+        guard let url = URL(string: "https://t.me/") else { return nil }
+        return OpenRequest(url: url, label: "Telegram", kind: .telegram)
+    }
+
+    /// Safari via universal link — opens the default browser (Safari).
+    public static func safari() -> OpenRequest? {
+        guard let url = URL(string: "https://www.apple.com/safari/") else { return nil }
+        return OpenRequest(url: url, label: "Safari", kind: .safari)
+    }
+
+    /// Chrome — no direct scheme available on iOS for third-party browsers.
+    /// Opens a web page which will launch in the default browser (user's choice).
+    public static func chrome() -> OpenRequest? {
+        guard let url = URL(string: "https://www.google.com/chrome/") else { return nil }
+        return OpenRequest(url: url, label: "Chrome", kind: .chrome)
+    }
+
+    /// Instagram via universal link.
+    public static func instagram() -> OpenRequest? {
+        guard let url = URL(string: "https://www.instagram.com/") else { return nil }
+        return OpenRequest(url: url, label: "Instagram", kind: .instagram)
+    }
+
+    /// Photos app via universal link.
+    public static func photos() -> OpenRequest? {
+        guard let url = URL(string: "photos-redirect://") else { return nil }
+        return OpenRequest(url: url, label: "Photos", kind: .photos)
+    }
+
     /// YouTube via HTTPS universal links ONLY — deliberately never the
     /// `youtube://` custom scheme. A universal link opens the YouTube app
     /// when installed and falls back to Safari otherwise, so there is no
@@ -164,6 +210,17 @@ public struct OpenRequest: Equatable, Sendable {
     }
 }
 
+/// A validated device-system action. Only things iOS lets third-party apps
+/// do: screen brightness (settable, no entitlement) and relative steps.
+/// Volume is deliberately absent — iOS offers no public volume-setter API
+/// (only MPVolumeView UI), so volume phrases are answered, never executed.
+public enum SystemAction: Equatable, Sendable {
+    /// Absolute brightness 0.05...1.0.
+    case brightness(Double)
+    case brightnessUp
+    case brightnessDown
+}
+
 /// Result of fast-path routing: either a locally-handled outcome or
 /// `.none`, meaning "send to the AI backend normally".
 public enum FastCommandAction: Equatable, Sendable {
@@ -179,6 +236,12 @@ public enum FastCommandAction: Equatable, Sendable {
     case callContact(String)
     case messageContact(String)
     case whatsAppContact(String)
+    /// Validated device-system action (handled by the UI layer).
+    case system(SystemAction)
+    /// Create a task reminder, optionally at a parsed due date.
+    case remind(text: String, dueDate: Date?)
+    /// Read back active reminders as an assistant message.
+    case myReminders
     case none
 }
 
@@ -211,6 +274,8 @@ public struct FastCommandRouter: Sendable {
             return .mic(.disableMic)
         case "time", "what time is it", "current time", "tell me the time", "what's the time":
             return .answer("The current time is \(Self.timeString()).")
+        case "my reminders", "read my reminders", "show my reminders", "my tasks", "show my tasks", "reminders":
+            return .myReminders
         case "date", "what date is it", "current date", "today's date", "what is today's date", "what day is it":
             return .answer("Today is \(Self.dateString()).")
         default:
@@ -224,7 +289,71 @@ public struct FastCommandRouter: Sendable {
         if let contact = Self.contactAction(for: norm) {
             return contact
         }
+        if let system = Self.systemAction(for: norm) {
+            return system
+        }
+        if let remind = Self.reminderAction(for: norm) {
+            return remind
+        }
         return .none
+    }
+
+    /// Brightness (settable API) and the volume honesty answer (no setter API
+    /// exists — answered locally so the user learns the real limit at once).
+    static func systemAction(for norm: String) -> FastCommandAction? {
+        if norm == "brightness up" || norm == "increase brightness" || norm == "brighter" {
+            return .system(.brightnessUp)
+        }
+        if norm == "brightness down" || norm == "decrease brightness" || norm == "dim" || norm == "dimmer" {
+            return .system(.brightnessDown)
+        }
+        for prefix in ["set brightness", "brightness"] {
+            if let rest = remainder(after: [prefix], in: norm), !rest.isEmpty {
+                if let level = brightnessLevel(from: rest) {
+                    return .system(.brightness(level))
+                }
+                return nil
+            }
+        }
+        if norm.contains("volume") && (norm.hasPrefix("set ") || norm.hasPrefix("increase ") || norm.hasPrefix("decrease ") || norm.hasPrefix("turn ") || norm == "volume up" || norm == "volume down" || norm == "mute") {
+            return .answer("Volume can only be changed with the iPhone side buttons — iOS doesn't let apps set it.")
+        }
+        return nil
+    }
+
+    /// 0-100 percent or full/half/low/minimum words → 0.05...1.0 (never a
+    /// fully black screen from a misheard command).
+    static func brightnessLevel(from rest: String) -> Double? {
+        let lower = rest.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch lower {
+        case "full", "maximum", "max": return 1.0
+        case "half", "medium": return 0.5
+        case "low": return 0.25
+        case "minimum", "min": return 0.1
+        default: break
+        }
+        let digits = lower.filter { $0.isNumber }
+        guard let value = Double(digits), !digits.isEmpty else { return nil }
+        return min(1.0, max(0.05, value / 100.0))
+    }
+
+    /// "remind me to <text>" [+ "in N minutes|hours"]. Bare "remind me" and
+    /// unparseable times fall through to the AI.
+    static func reminderAction(for norm: String) -> FastCommandAction? {
+        guard norm.hasPrefix("remind me to ") else { return nil }
+        let rest = String(norm.dropFirst("remind me to ".count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !rest.isEmpty else { return nil }
+        let words = rest.lowercased().split(separator: " ").map(String.init)
+        if words.count >= 4, words[words.count - 3] == "in",
+           let amount = Double(words[words.count - 2]),
+           ["minute", "minutes", "hour", "hours"].contains(words[words.count - 1]),
+           amount > 0, amount <= 24 * 7 {
+            let seconds = words[words.count - 1].hasPrefix("hour") ? amount * 3600 : amount * 60
+            let text = words.dropLast(3).joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { return .remind(text: rest, dueDate: nil) }
+            return .remind(text: text, dueDate: Date().addingTimeInterval(seconds))
+        }
+        return .remind(text: rest, dueDate: nil)
     }
 
     /// Contact-name fallback for call/text/whatsapp. Bare verbs yield nil
@@ -251,11 +380,26 @@ public struct FastCommandRouter: Sendable {
         if norm == "open app store" || norm == "app store" {
             return OpenRequest.appStore()
         }
-        if norm == "instagram" || norm == "open instagram" {
+        if norm == "open camera" || norm == "camera" || norm == "take photo" || norm == "take picture" {
+            return OpenRequest.camera()
+        }
+        if norm == "open telegram" || norm == "telegram" {
+            return OpenRequest.telegram()
+        }
+        if norm == "open instagram" || norm == "instagram" {
             return OpenRequest.instagram()
         }
-        if norm == "whatsapp" || norm == "open whatsapp" {
+        if norm == "open whatsapp" || norm == "whatsapp" {
             return OpenRequest.whatsAppHome()
+        }
+        if norm == "open safari" || norm == "safari" || norm == "open browser" || norm == "browser" {
+            return OpenRequest.safari()
+        }
+        if norm == "open chrome" || norm == "chrome" {
+            return OpenRequest.chrome()
+        }
+        if norm == "open photos" || norm == "photos" || norm == "gallery" || norm == "open gallery" {
+            return OpenRequest.photos()
         }
         if norm == "x" || norm == "open x" || norm == "twitter" || norm == "open twitter" {
             return OpenRequest.xHome()
