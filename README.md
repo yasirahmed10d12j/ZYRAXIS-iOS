@@ -247,6 +247,9 @@ Non-streaming fallback: `POST {baseURL}/api/{apiVersion}/chat`
 | Tool execution on device | ❌ NOT implemented (metadata only; backend executes server-side) |
 | Tool round-trip client side (lookup → safe read-only exec → result/refusal) | ✅ REAL client logic, tested with doubles; zero tools registered |
 | Remote commands (dashboard → device `remote_command`) | ✅ REAL receiver (persistent socket listener → fast-command path, origin logged), tested with doubles; needs server dashboard to send; old builds ignore the frame safely |
+| Memory notes + call-by-memory ("remember …", "<name>'s number is …" → "call <name>") | ✅ REAL local logic, tested with doubles; contacts tried first, memory fallback with word-boundary match; short names skip lookup |
+| System apps (Messages/Mail/FaceTime fronts) + torch | ✅ REAL routing, tested URL construction; on-device open/torch behavior UNVERIFIED — REQUIRES DEVICE |
+| Volume / Phone-keypad control | ❌ impossible — iOS offers no public API; answered honestly on-device |
 | Connection diagnostics + T0…T4 latency | ✅ REAL values or "—" (DEBUG section, no fake metrics) |
 | Dev/Staging/Production environments | ✅ REAL URL resolution with production fallback |
 | Memory CRUD (in-memory) + bounded context injection | ✅ REAL, tested; backend sync later |

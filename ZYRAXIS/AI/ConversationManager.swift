@@ -173,6 +173,14 @@ public final class ConversationManager: ObservableObject {
             messages.append(ConversationMessage(role: .user, text: trimmed))
             await handleMyReminders()
             return
+        case .remember(let text):
+            messages.append(ConversationMessage(role: .user, text: trimmed))
+            await handleRememberNote(text)
+            return
+        case .rememberPhone(let name, let digits):
+            messages.append(ConversationMessage(role: .user, text: trimmed))
+            await handleRememberPhone(name: name, digits: digits)
+            return
         case .none:
             break
         }
@@ -477,37 +485,88 @@ public final class ConversationManager: ObservableObject {
     }
 
     /// Resolves a contact name to a validated open request (call/text/chat).
-    /// Honest at every step: missing service, denied permission, unknown name,
-    /// and invalid numbers each produce a clear activity — never a blind dial.
+    /// Order: iOS contacts first, then the app's own memory ("Rehan's phone
+    /// number: …" saved via remember commands), then an honest error.
+    /// Memory is app-local data, so it is tried even when Contacts permission
+    /// was denied — only short (<3 char) names skip it to avoid substring
+    /// noise. Digits typed directly never reach here (opened without lookup).
     private func handleContactCommand(name: String, makeRequest: (String) -> OpenRequest?) async {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else {
             pushActivity(.init(kind: .error, title: "No contact name given"))
             return
         }
-        guard let directory = contactService else {
+        var contactsDenied = false
+        if let directory = contactService {
+            if await directory.requestPermission() {
+                if let digits = await directory.phoneNumber(for: trimmedName),
+                   let request = makeRequest(digits) {
+                    openURLHandler?(request)
+                    pushActivity(.init(kind: .system, title: "Opening \(request.label)"))
+                    return
+                }
+            } else {
+                contactsDenied = true
+            }
+        }
+        if let digits = await phoneNumberFromMemory(name: trimmedName),
+           let request = makeRequest(digits) {
+            openURLHandler?(request)
+            pushActivity(.init(kind: .system, title: "Opening \(request.label) (from memory)"))
+            return
+        }
+        if contactService == nil {
             pushActivity(.init(kind: .error, title: "Contacts unavailable on this build"))
             return
         }
-        guard await directory.requestPermission() else {
+        if contactsDenied {
             pushActivity(.init(
                 kind: .error,
                 title: "Contacts permission denied",
-                detail: "Enable Contacts in iOS Settings to call or message by name."
+                detail: "Enable Contacts in iOS Settings — or say \"\(trimmedName)'s number is …\" and I'll remember it."
             ))
             return
         }
-        guard let digits = await directory.phoneNumber(for: trimmedName),
-              let request = makeRequest(digits) else {
-            pushActivity(.init(
-                kind: .error,
-                title: "Couldn't find '\(trimmedName)' in contacts",
-                detail: "Use the full name as saved, or dictate the digits directly."
-            ))
-            return
+        pushActivity(.init(
+            kind: .error,
+            title: "Couldn't find '\(trimmedName)' in contacts or memory",
+            detail: "Use the full name as saved, dictate the digits directly, or say \"\(trimmedName)'s number is …\" to save it."
+        ))
+    }
+
+    /// Looks up "<name>'s number" in memory: word-boundary name match plus a
+    /// 7+ digit run in the same entry. Short names are skipped (substring
+    /// noise — e.g. "me" inside "memory").
+    private func phoneNumberFromMemory(name: String) async -> String? {
+        guard name.count >= 3 else { return nil }
+        guard let items = try? await memoryService.search(query: name, limit: 10) else { return nil }
+        for item in items {
+            let lower = item.content.lowercased()
+            guard Self.containsWord(lower, name.lowercased()) else { continue }
+            if let digits = Self.firstPhoneDigits(in: item.content) { return digits }
         }
-        openURLHandler?(request)
-        pushActivity(.init(kind: .system, title: "Opening \(request.label)"))
+        return nil
+    }
+
+    /// First run starting with an optional + holding 7+ digits total.
+    static func firstPhoneDigits(in text: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: "\\+?\\d[\\d\\s\\-().]{5,}\\d") else { return nil }
+        let range = NSRange(text.startIndex..., in: text)
+        for match in regex.matches(in: text, range: range) {
+            guard let r = Range(match.range, in: text) else { continue }
+            let raw = String(text[r])
+            let plus = raw.hasPrefix("+") ? "+" : ""
+            let digits = raw.filter { $0.isNumber }
+            if digits.count >= 7 { return plus + digits }
+        }
+        return nil
+    }
+
+    static func containsWord(_ text: String, _ word: String) -> Bool {
+        guard let regex = try? NSRegularExpression(
+            pattern: "\\b" + NSRegularExpression.escapedPattern(for: word) + "\\b"
+        ) else { return false }
+        return regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
     }
 
     /// Brightness change via system action handler (UI layer owns UIScreen).
@@ -556,6 +615,31 @@ public final class ConversationManager: ObservableObject {
         formatter.timeStyle = .short
         formatter.dateStyle = .none
         return formatter.string(from: date)
+    }
+
+    /// Saves a free-form note ("remember that …") to memory with confirmation.
+    private func handleRememberNote(_ text: String) async {
+        do {
+            let item = try await memoryService.save(content: text, tags: ["note"], importance: 0.7)
+            pushActivity(.init(kind: .system, title: "Saved to memory", detail: String(item.content.prefix(120))))
+        } catch {
+            pushActivity(.init(kind: .error, title: "Couldn't save that", detail: error.localizedDescription))
+        }
+    }
+
+    /// Saves "<Name>'s phone number: <digits>" for later call/text by name.
+    private func handleRememberPhone(name: String, digits: String) async {
+        let pretty = FastCommandRouter.prettifyName(name)
+        do {
+            _ = try await memoryService.save(
+                content: "\(pretty)'s phone number: \(digits)",
+                tags: ["contact", "phone"],
+                importance: 0.9
+            )
+            pushActivity(.init(kind: .system, title: "Saved \(pretty)'s number"))
+        } catch {
+            pushActivity(.init(kind: .error, title: "Couldn't save that number", detail: error.localizedDescription))
+        }
     }
 
     /// Speaks via the wired SpeechService (nil by default → silent).

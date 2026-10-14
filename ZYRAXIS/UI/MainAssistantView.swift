@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import UIKit
+import AVFoundation
 
 /// Premium futuristic ZYRAXIS home screen for iPhone.
 ///
@@ -162,6 +163,16 @@ public struct MainAssistantView: View {
                     case .brightnessDown:
                         UIScreen.main.brightness = max(0.05, UIScreen.main.brightness - 0.15)
                         deps.pushActivity(.init(kind: .system, title: "Brightness decreased"))
+                    case .torch(let on):
+                        if Self.setTorch(on: on) {
+                            deps.pushActivity(.init(kind: .system, title: on ? "Flashlight on" : "Flashlight off"))
+                        } else {
+                            deps.pushActivity(.init(
+                                kind: .error,
+                                title: "Couldn't reach the flashlight",
+                                detail: "This iPhone may have no torch, or Camera access is denied (iOS Settings → ZYRAXIS → Camera)."
+                            ))
+                        }
                     }
                 }
             }
@@ -356,6 +367,23 @@ public struct MainAssistantView: View {
         deps.voiceManager.stopListening()
         deps.stateMachine.transition(to: .idle)
         deps.pushActivity(.init(kind: .listening, title: "Mic closed"))
+    }
+
+    /// Camera flashlight via AVCaptureDevice torch. Returns false when the
+    /// device has no torch or Camera access is denied — the caller reports
+    /// that honestly instead of pretending. Torch needs the video device,
+    /// which is why Camera permission (already declared for Vision) applies.
+    private static func setTorch(on: Bool) -> Bool {
+        guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return false }
+        do {
+            try device.lockForConfiguration()
+            device.torchMode = on ? .on : .off
+            device.unlockForConfiguration()
+            return true
+        } catch {
+            ZyraxisLogger.error(.voice, "torch failed: \(error.localizedDescription)")
+            return false
+        }
     }
 
     /// Background grace: if a reply is streaming or the mic is capturing when

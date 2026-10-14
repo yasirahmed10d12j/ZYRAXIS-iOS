@@ -195,6 +195,29 @@ public struct OpenRequest: Equatable, Sendable {
         return OpenRequest(url: url, label: "YouTube search", kind: .youTube)
     }
 
+    /// Messages composer (no address — the user picks the recipient).
+    /// Bare `sms:` is constructed, never displayed as AI output.
+    /// Device behavior UNVERIFIED — needs a real iPhone (no public docs
+    /// guarantee what bare `sms:` opens).
+    public static func messages() -> OpenRequest? {
+        guard let url = URL(string: "sms:") else { return nil }
+        return OpenRequest(url: url, label: "Messages", kind: .message)
+    }
+
+    /// Mail composer (empty draft). Device behavior UNVERIFIED — needs a
+    /// real iPhone.
+    public static func mailComposer() -> OpenRequest? {
+        guard let url = URL(string: "mailto:") else { return nil }
+        return OpenRequest(url: url, label: "Mail", kind: .email)
+    }
+
+    /// FaceTime app front (no target). Device behavior UNVERIFIED — needs a
+    /// real iPhone.
+    public static func facetimeHome() -> OpenRequest? {
+        guard let url = URL(string: "facetime://") else { return nil }
+        return OpenRequest(url: url, label: "FaceTime", kind: .facetime)
+    }
+
     private static func phoneDigits(from raw: String) -> String? {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         let plus = trimmed.hasPrefix("+") ? "+" : ""
@@ -205,14 +228,21 @@ public struct OpenRequest: Equatable, Sendable {
 }
 
 /// A validated device-system action. Only things iOS lets third-party apps
-/// do: screen brightness (settable, no entitlement) and relative steps.
+/// do: screen brightness (settable, no entitlement), relative steps, and the
+/// camera flashlight (AVCaptureDevice torch — needs Camera permission, asked
+/// on first use).
 /// Volume is deliberately absent — iOS offers no public volume-setter API
 /// (only MPVolumeView UI), so volume phrases are answered, never executed.
+/// The Phone keypad is likewise absent — no public scheme opens it, so
+/// "open phone" is answered, never faked.
 public enum SystemAction: Equatable, Sendable {
     /// Absolute brightness 0.05...1.0.
     case brightness(Double)
     case brightnessUp
     case brightnessDown
+    /// Flashlight on/off (torch). Executed by the UI layer; reports failure
+    /// honestly when the device has no torch or Camera is denied.
+    case torch(Bool)
 }
 
 /// Result of fast-path routing: either a locally-handled outcome or
@@ -236,6 +266,10 @@ public enum FastCommandAction: Equatable, Sendable {
     case remind(text: String, dueDate: Date?)
     /// Read back active reminders as an assistant message.
     case myReminders
+    /// Save a note to memory ("remember that …"). Shown back as confirmation.
+    case remember(String)
+    /// Save "<name>'s phone number: <digits>" to memory for call-by-name.
+    case rememberPhone(name: String, digits: String)
     case none
 }
 
@@ -270,6 +304,12 @@ public struct FastCommandRouter: Sendable {
             return .answer("The current time is \(Self.timeString()).")
         case "my reminders", "read my reminders", "show my reminders", "my tasks", "show my tasks", "reminders":
             return .myReminders
+        case "volume":
+            return .answer("Volume can only be changed with the iPhone side buttons — iOS doesn't let apps set it.")
+        case "phone", "open phone", "dialer", "open dialer", "keypad", "phone app":
+            return .answer("I can't open the Phone keypad — iOS doesn't allow apps to do that. Say \"call\" followed by the number instead.")
+        case "flashlight", "torch", "flash":
+            return .answer("Say \"flashlight on\" or \"flashlight off\".")
         case "date", "what date is it", "current date", "today's date", "what is today's date", "what day is it":
             return .answer("Today is \(Self.dateString()).")
         default:
@@ -286,6 +326,9 @@ public struct FastCommandRouter: Sendable {
         if let system = Self.systemAction(for: norm) {
             return system
         }
+        if let remember = Self.rememberAction(for: norm) {
+            return remember
+        }
         if let remind = Self.reminderAction(for: norm) {
             return remind
         }
@@ -294,8 +337,17 @@ public struct FastCommandRouter: Sendable {
 
     /// Brightness (settable API) and the volume honesty answer (no setter API
     /// exists — answered locally so the user learns the real limit at once).
+    /// Torch (flashlight) via AVCaptureDevice — executed by the UI layer,
+    /// which reports camera-denied/torch-missing honestly.
     static func systemAction(for norm: String) -> FastCommandAction? {
-        if norm == "brightness up" || norm == "increase brightness" || norm == "brighter" {
+        for phrase in ["flashlight on", "torch on", "flash on", "turn on flashlight", "turn on torch",
+                       "turn the flashlight on", "turn on the flashlight", "switch on flashlight"] {
+            if norm == phrase { return .system(.torch(true)) }
+        }
+        for phrase in ["flashlight off", "torch off", "flash off", "turn off flashlight", "turn off torch",
+                       "turn the flashlight off", "turn off the flashlight", "switch off flashlight"] {
+            if norm == phrase { return .system(.torch(false)) }
+        }        if norm == "brightness up" || norm == "increase brightness" || norm == "brighter" {
             return .system(.brightnessUp)
         }
         if norm == "brightness down" || norm == "decrease brightness" || norm == "dim" || norm == "dimmer" {
@@ -329,6 +381,93 @@ public struct FastCommandRouter: Sendable {
         let digits = lower.filter { $0.isNumber }
         guard let value = Double(digits), !digits.isEmpty else { return nil }
         return min(1.0, max(0.05, value / 100.0))
+    }
+
+    /// "remember …" memory commands. Narrow by construction so normal chat
+    /// ("remember when…", "do you remember…") always reaches the AI:
+    /// - phone-number facts match ANYWHERE — the digits are their own proof
+    ///   ("Rehan's number is 03001234567", "remember mom's mobile number is…").
+    /// - a named number WITHOUT digits asks for the digits, but only when
+    ///   the input also carries a remember/save/note/learn verb (so plain
+    ///   questions like "what is mom's number?" still reach the AI/memory).
+    /// - generic notes need explicit verbs ("remember that …", "… in memory").
+    static func rememberAction(for norm: String) -> FastCommandAction? {
+        if let (name, digits) = contactNumberFact(in: norm) {
+            return .rememberPhone(name: name, digits: digits)
+        }
+        if let name = contactNumberMissingDigits(in: norm) {
+            let pretty = prettifyName(name)
+            return .answer("I don't have \(pretty)'s number yet — say \"\(pretty)'s number is\" followed by the digits and I'll remember it.")
+        }
+        for prefix in ["remember that ", "remember this ", "note that ", "note down ",
+                       "save that ", "don't forget that ", "don't forget to ",
+                       "dont forget that ", "dont forget to ", "keep in mind that "] {
+            if norm.hasPrefix(prefix) {
+                let rest = String(norm.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+                if !rest.isEmpty { return .remember(rest) }
+            }
+        }
+        for verb in ["remember ", "save ", "note "] {
+            if norm.hasPrefix(verb) && norm.hasSuffix(" in memory") {
+                var rest = String(norm.dropFirst(verb.count))
+                for suffix in [" in memory", " to memory", " into memory"] {
+                    if rest.hasSuffix(suffix) { rest = String(rest.dropLast(suffix.count)); break }
+                }
+                rest = rest.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !rest.isEmpty { return .remember(rest) }
+            }
+        }
+        return nil
+    }
+
+    /// "<name>'s [phone|mobile|contact] number is <digits>" or
+    /// "my [phone|mobile] number is <digits>". Name is 1–40 chars, digit-free.
+    static func contactNumberFact(in norm: String) -> (name: String, digits: String)? {
+        guard let regex = try? NSRegularExpression(
+            pattern: "([a-z][a-z .'-]*?)'s (?:phone |mobile |contact )?number is (\\+?[\\d][\\d\\s\\-().]{5,}\\d|\\d{7,})"
+        ) else { return nil }
+        let range = NSRange(norm.startIndex..., in: norm)
+        guard let m = regex.firstMatch(in: norm, range: range),
+              let nameRange = Range(m.range(at: 1), in: norm),
+              let digitRange = Range(m.range(at: 2), in: norm) else { return nil }
+        var name = String(norm[nameRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+        for lead in ["this is ", "that is ", "it is "] {
+            if name.hasPrefix(lead) { name = String(name.dropFirst(lead.count)); break }
+        }
+        name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let raw = String(norm[digitRange])
+        let plus = raw.hasPrefix("+") ? "+" : ""
+        let digits = plus + raw.filter { $0.isNumber }
+        guard !name.isEmpty, name.count <= 40, !name.contains(where: { $0.isNumber }),
+              digits.filter({ $0.isNumber }).count >= 7 else { return nil }
+        return (name, digits)
+    }
+
+    /// Named number mentioned without digits, gated on a memory verb.
+    static func contactNumberMissingDigits(in norm: String) -> String? {
+        guard norm.contains("remember") || norm.contains("save")
+                || norm.contains("note") || norm.contains("learn") else { return nil }
+        guard let regex = try? NSRegularExpression(
+            pattern: "([a-z][a-z .'-]*?)'s (?:phone |mobile |contact )?number\\b"
+        ) else { return nil }
+        let range = NSRange(norm.startIndex..., in: norm)
+        guard let m = regex.firstMatch(in: norm, range: range),
+              let nameRange = Range(m.range(at: 1), in: norm) else { return nil }
+        // A fact WITH digits is handled above — only the digit-less case lands here.
+        let rest = String(norm[Range(m.range, in: norm)!.upperBound...])
+        if rest.filter({ $0.isNumber }).count >= 7 { return nil }
+        var name = String(norm[nameRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+        for lead in ["this is ", "that is ", "it is ", "this ", "that "] {
+            if name.hasPrefix(lead) { name = String(name.dropFirst(lead.count)); break }
+        }
+        name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, name.count <= 40, !name.contains(where: { $0.isNumber }) else { return nil }
+        return name
+    }
+
+    /// "rehan" → "Rehan" for user-facing confirmations (input is lowercased).
+    static func prettifyName(_ name: String) -> String {
+        name.split(separator: " ").map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " ")
     }
 
     /// "remind me to <text>" [+ "in N minutes|hours"]. Bare "remind me" and
@@ -373,6 +512,15 @@ public struct FastCommandRouter: Sendable {
     static func openRequest(for norm: String) -> OpenRequest? {
         if norm == "open app store" || norm == "app store" {
             return OpenRequest.appStore()
+        }
+        if norm == "messages" || norm == "open messages" || norm == "sms" || norm == "open sms" || norm == "open texts" {
+            return OpenRequest.messages()
+        }
+        if norm == "mail" || norm == "open mail" || norm == "open email" || norm == "email app" {
+            return OpenRequest.mailComposer()
+        }
+        if norm == "facetime" || norm == "open facetime" {
+            return OpenRequest.facetimeHome()
         }
         if norm == "open camera" || norm == "camera" || norm == "take photo" || norm == "take picture" {
             return OpenRequest.camera()
