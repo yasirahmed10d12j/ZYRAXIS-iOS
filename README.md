@@ -403,7 +403,10 @@ item below is enforced by the code, not assumed:
 5. **Voice responses toggle** (default OFF): Settings → **Voice responses
    (TTS)**. Without it replies are text-only. Spoken replies use the
    loudspeaker (`playAndRecord` + `defaultToSpeaker`); if speech is
-   inaudible, raise media volume and confirm the toggle.
+   inaudible, raise media volume and confirm the toggle. Tune **Speech
+   rate** (0.25–1.0) and **Voice** (system default or a named voice) in
+   the same section; recognizer language (**System/English/Urdu/Hindi**)
+   applies at the next mic open.
 6. A phone call, Siri, or alarm stops capture (`MIC STOPPED`) and never
    auto-resumes — tap the mic again. This is deliberate (privacy).
 
@@ -451,12 +454,29 @@ and universal links only. Say exactly:
 - `open youtube` / `youtube cats` → YouTube (HTTPS universal link: opens the
   app when installed, Safari otherwise — never the `youtube://` custom
   scheme, which fails instantly without the app)
+- `open x` / `open twitter`, `open facebook`, `open snapchat` → those front
+  pages (universal links)
 
-Anything unvalidated (`open settings`, `call abc`, unknown apps) is NOT
+Anything unvalidated (`open settings`, unknown apps) is NOT
 opened — it falls through to the AI instead, and a failed open reports
 "Couldn't open … on this iPhone". iOS Settings and arbitrary third-party
 apps cannot be opened (sandbox; no public scheme) — requests for them go to
-the AI, never to a bypass.
+the AI, never to a bypass. (`call abc` routes to a contact lookup, not the
+AI — unknown names report "Couldn't find … in contacts".)
+
+### Siri Shortcuts (no need to open the app)
+
+"Hey Siri, ask ZYRAXIS …" answers without opening the app: the shortcut
+reads your saved Gemini/Groq key from Keychain, calls the provider
+directly, and Siri speaks the answer. No key = a setup dialog pointing at
+Settings. Rate limits surface as "try again" dialogs. The shortcut needs an
+unlocked device (Keychain) and gives one final answer per question
+(no streaming inside Siri).
+
+### Transcript export
+
+Tap **Share** next to Clear in the transcript header to open the iOS share
+sheet with the conversation as plain text (`[USER]` / `[ASSISTANT]` lines).
 
 ## Codemagic CI/CD setup
 

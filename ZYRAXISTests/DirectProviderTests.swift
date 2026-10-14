@@ -490,4 +490,13 @@ final class DirectProviderTests: XCTestCase {
         }
         XCTAssertEqual(response.text, "Hi")
     }
+
+    func testShortcutProviderSelection() {
+        XCTAssertEqual(ShortcutProviderPolicy.pickProvider(geminiKey: "k", groqKey: "g"), .gemini)
+        XCTAssertEqual(ShortcutProviderPolicy.pickProvider(geminiKey: nil, groqKey: "g"), .groq)
+        XCTAssertEqual(ShortcutProviderPolicy.pickProvider(geminiKey: "  ", groqKey: nil), .none)
+        XCTAssertEqual(ShortcutProviderPolicy.pickProvider(geminiKey: nil, groqKey: nil), .none)
+        XCTAssertFalse(ShortcutProviderPolicy.setupDialog().isEmpty)
+        XCTAssertFalse(ShortcutProviderPolicy.rateLimitDialog().isEmpty)
+    }
 }

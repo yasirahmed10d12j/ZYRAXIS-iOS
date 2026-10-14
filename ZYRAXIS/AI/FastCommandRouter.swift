@@ -117,6 +117,24 @@ public struct OpenRequest: Equatable, Sendable {
         return OpenRequest(url: url, label: "WhatsApp", kind: .website)
     }
 
+    /// Fixed X front page (universal link, no user input).
+    public static func xHome() -> OpenRequest? {
+        guard let url = URL(string: "https://x.com/") else { return nil }
+        return OpenRequest(url: url, label: "X", kind: .website)
+    }
+
+    /// Fixed Facebook front page (universal link, no user input).
+    public static func facebookHome() -> OpenRequest? {
+        guard let url = URL(string: "https://www.facebook.com/") else { return nil }
+        return OpenRequest(url: url, label: "Facebook", kind: .website)
+    }
+
+    /// Fixed Snapchat front page (universal link, no user input).
+    public static func snapchatHome() -> OpenRequest? {
+        guard let url = URL(string: "https://www.snapchat.com/") else { return nil }
+        return OpenRequest(url: url, label: "Snapchat", kind: .website)
+    }
+
     /// YouTube via HTTPS universal links ONLY — deliberately never the
     /// `youtube://` custom scheme. A universal link opens the YouTube app
     /// when installed and falls back to Safari otherwise, so there is no
@@ -238,6 +256,15 @@ public struct FastCommandRouter: Sendable {
         }
         if norm == "whatsapp" || norm == "open whatsapp" {
             return OpenRequest.whatsAppHome()
+        }
+        if norm == "x" || norm == "open x" || norm == "twitter" || norm == "open twitter" {
+            return OpenRequest.xHome()
+        }
+        if norm == "facebook" || norm == "open facebook" {
+            return OpenRequest.facebookHome()
+        }
+        if norm == "snapchat" || norm == "open snapchat" {
+            return OpenRequest.snapchatHome()
         }
         if norm == "youtube" || norm == "open youtube" {
             return OpenRequest.youTubeHome()

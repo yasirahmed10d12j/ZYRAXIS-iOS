@@ -84,6 +84,27 @@ public final class SettingsStore: ObservableObject {
     @Published public var liveTranscriptionEnabled: Bool {
         didSet { defaults.set(liveTranscriptionEnabled, forKey: Keys.liveTranscription) }
     }
+    /// STT recognizer locale: BCP-47 identifier ("en-US", "ur-PK", "hi-IN")
+    /// or "system" for the device default.
+    @Published public var sttLocale: String {
+        didSet { defaults.set(sttLocale, forKey: Keys.sttLocale) }
+    }
+    /// Nil when `sttLocale` is "system".
+    public var sttLocaleIdentifier: String? {
+        sttLocale == "system" ? nil : sttLocale
+    }
+    /// TTS speaking rate 0.0...1.0 (system default 0.5).
+    @Published public var ttsRate: Float {
+        didSet { defaults.set(ttsRate, forKey: Keys.ttsRate) }
+    }
+    /// Explicit TTS voice identifier, or nil/empty for system default.
+    @Published public var ttsVoiceIdentifier: String {
+        didSet { defaults.set(ttsVoiceIdentifier, forKey: Keys.ttsVoice) }
+    }
+    /// Hands-free auto-send silence threshold, seconds (0.6...3.0).
+    @Published public var handsFreeSilenceSeconds: Double {
+        didSet { defaults.set(handsFreeSilenceSeconds, forKey: Keys.handsFreeSilence) }
+    }
     /// Hands-free loop: mic auto-closes on utterance end (STT final auto-sends)
     /// and re-opens after each voice turn. Default OFF — explicit opt-in only.
     @Published public var handsFreeMode: Bool {
@@ -112,6 +133,10 @@ public final class SettingsStore: ObservableObject {
         static let voiceResponses = "zyraxis.settings.voiceResponses"
         static let handsFree = "zyraxis.settings.handsFree"
         static let liveTranscription = "zyraxis.settings.liveTranscription"
+        static let sttLocale = "zyraxis.settings.sttLocale"
+        static let ttsRate = "zyraxis.settings.ttsRate"
+        static let ttsVoice = "zyraxis.settings.ttsVoice"
+        static let handsFreeSilence = "zyraxis.settings.handsFreeSilence"
     }
 
     public init(defaults: UserDefaults = .standard) {
@@ -140,6 +165,14 @@ public final class SettingsStore: ObservableObject {
         self.voiceResponsesEnabled = d.object(forKey: Keys.voiceResponses) as? Bool ?? false
         self.handsFreeMode = d.object(forKey: Keys.handsFree) as? Bool ?? false
         self.liveTranscriptionEnabled = d.object(forKey: Keys.liveTranscription) as? Bool ?? false
+        self.sttLocale = d.string(forKey: Keys.sttLocale) ?? "system"
+        let tr = d.object(forKey: Keys.ttsRate) as? Float ?? -1
+        // 0.5 = AVSpeechUtteranceDefaultSpeechRate (kept literal so this
+        // settings layer does not import AVFoundation).
+        self.ttsRate = tr < 0 ? 0.5 : min(1.0, max(0.0, tr))
+        self.ttsVoiceIdentifier = d.string(forKey: Keys.ttsVoice) ?? ""
+        let hs = d.double(forKey: Keys.handsFreeSilence)
+        self.handsFreeSilenceSeconds = hs > 0 ? min(3.0, max(0.6, hs)) : 1.2
     }
 
     /// Validated snapshot for the networking layer. The active HTTP base
@@ -193,6 +226,10 @@ public final class SettingsStore: ObservableObject {
         appearance = .dark
         voiceResponsesEnabled = false
         handsFreeMode = false
+        sttLocale = "system"
+        ttsRate = 0.5
+        ttsVoiceIdentifier = ""
+        handsFreeSilenceSeconds = 1.2
         liveTranscriptionEnabled = false
     }
 }

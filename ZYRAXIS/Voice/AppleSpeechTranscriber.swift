@@ -24,7 +24,7 @@ import Speech
 public final class AppleSpeechTranscriber: ObservableObject, STTProvider {
 
     public var isAvailable: Bool {
-        SFSpeechRecognizer()?.isAvailable ?? false
+        makeRecognizer()?.isAvailable ?? false
     }
 
     public var transcripts: AnyPublisher<STTTranscript, Never> {
@@ -36,6 +36,9 @@ public final class AppleSpeechTranscriber: ObservableObject, STTProvider {
     private var activeRequest: SFSpeechAudioBufferRecognitionRequest?
     private var cachedFormat: AVAudioFormat?
     private var speechAuthorized = false
+    /// BCP-47 locale for the recognizer, or nil for system default.
+    /// Applied at the next `start()` (a live task keeps its locale).
+    public var localeIdentifier: String?
 
     public init() {}
     // MARK: - Permission
@@ -51,8 +54,19 @@ public final class AppleSpeechTranscriber: ObservableObject, STTProvider {
 
     // MARK: - Lifecycle
 
+    public func applyLocale(identifier: String?) {
+        localeIdentifier = identifier
+    }
+
+    private func makeRecognizer() -> SFSpeechRecognizer? {
+        if let id = localeIdentifier, !id.isEmpty {
+            return SFSpeechRecognizer(locale: Locale(identifier: id))
+        }
+        return SFSpeechRecognizer()
+    }
+
     public func start() throws {
-        guard let recognizer = SFSpeechRecognizer(), recognizer.isAvailable else {
+        guard let recognizer = makeRecognizer(), recognizer.isAvailable else {
             throw AppError.voice("Speech recognition is unavailable on this device or locale.")
         }
         guard speechAuthorized else {

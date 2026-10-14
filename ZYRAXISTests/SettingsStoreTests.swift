@@ -46,4 +46,14 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertTrue(s.voiceEnabled)
         XCTAssertEqual(s.selectedProvider, .gemini)
     }
+
+    func testVoiceSettingsDefaultsAreSane() {
+        let (_, s) = freshStore()
+        XCTAssertFalse(s.handsFreeMode)
+        XCTAssertEqual(s.sttLocale, "system")
+        XCTAssertNil(s.sttLocaleIdentifier)
+        XCTAssertEqual(s.ttsRate, Float(0.5), accuracy: Float(0.001))
+        XCTAssertEqual(s.ttsVoiceIdentifier, "")
+        XCTAssertEqual(s.handsFreeSilenceSeconds, 1.2, accuracy: 0.001)
+    }
 }

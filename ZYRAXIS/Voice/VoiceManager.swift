@@ -109,6 +109,12 @@ public final class VoiceManagerImpl: ObservableObject, VoiceManager {
     /// the trailing STT final then auto-sends. Set from Settings' hands-free
     /// toggle whenever the mic opens. False = manual close only.
     public var autoStopOnSilence = false
+
+    /// Hands-free setup in one call: silence threshold comes from Settings.
+    public func configureHandsFree(enabled: Bool, silenceSeconds: Double) {
+        autoStopOnSilence = enabled
+        silenceDetector.silenceSeconds = min(3.0, max(0.6, silenceSeconds))
+    }
     private var silenceDetector = SilenceDetector()
 
     public init() {

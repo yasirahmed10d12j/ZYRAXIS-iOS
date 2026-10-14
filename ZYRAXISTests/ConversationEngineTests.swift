@@ -319,4 +319,16 @@ final class ConversationEngineTests: XCTestCase {
         await manager.send("typed, not spoken")
         XCTAssertEqual(relistens, 0, "typed turns must never reopen the mic")
     }
+
+    func testExportTextFormatsTranscript() async {
+        let (manager, _, _, _) = makeManager { id in
+            [.completed(requestId: id, response: AIResponse(text: "hi back", requestId: id))]
+        }
+        await manager.send("hello")
+        let text = manager.exportText()
+        XCTAssertTrue(text.contains("[USER]"))
+        XCTAssertTrue(text.contains("hello"))
+        XCTAssertTrue(text.contains("[ASSISTANT]"))
+        XCTAssertTrue(text.contains("hi back"))
+    }
 }

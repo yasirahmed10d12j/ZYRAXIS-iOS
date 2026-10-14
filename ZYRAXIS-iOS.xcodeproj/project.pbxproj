@@ -83,6 +83,7 @@
 		6E1A2B3C4D5E6F708192A3C7 /* GroqDirectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A2B3C4D5E6F708192A3C6 /* GroqDirectService.swift */; };
 		7E1A2B3C4D5E6F708192A3D9 /* DirectProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A2B3C4D5E6F708192A3D8 /* DirectProviderTests.swift */; };
 		B10C0FFEE1234567890ABCDF /* ContactService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10C0FFEE1234567890ABCDE /* ContactService.swift */; };
+		A17E3C0DE1234567890ABCDF /* AskZyraxisIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17E3C0DE1234567890ABCDE /* AskZyraxisIntent.swift */; };
 		415CD76F61CD7005D4F3337C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5B15DB5AF2A709DD87F02198 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -159,6 +160,7 @@
 		4B954263F73EA917A8C89BDB /* ToolRoundTripTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ToolRoundTripTests.swift; path = ToolRoundTripTests.swift; sourceTree = "<group>"; };
 		B4C79F13A13F732A8B4CB198 /* VoiceStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = VoiceStateTests.swift; path = VoiceStateTests.swift; sourceTree = "<group>"; };
 		B10C0FFEE1234567890ABCDE /* ContactService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContactService.swift; path = ContactService.swift; sourceTree = "<group>"; };
+		A17E3C0DE1234567890ABCDE /* AskZyraxisIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AskZyraxisIntent.swift; path = AskZyraxisIntent.swift; sourceTree = "<group>"; };
 		D1EC7B001A2B3C4D5E6F7081 /* DirectProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DirectProvider.swift; path = DirectProvider.swift; sourceTree = "<group>"; };
 		6E1A2B3C4D5E6F708192A3B4 /* GeminiDirectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GeminiDirectService.swift; path = GeminiDirectService.swift; sourceTree = "<group>"; };
 		6E1A2B3C4D5E6F708192A3C6 /* GroqDirectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GroqDirectService.swift; path = GroqDirectService.swift; sourceTree = "<group>"; };
@@ -220,9 +222,19 @@
 				4F38930979C0244B557AEE69 /* Components */,
 				CB94505789953FBAD1C5D145 /* Theme */,
 				15DE86E3EFDB8DA671EDF3BD /* Resources */,
+				A17E3C0DE1234567890ABCD0 /* Intents */,
 			);
 			name = ZYRAXIS;
 			path = ZYRAXIS;
+			sourceTree = "<group>";
+		};
+		A17E3C0DE1234567890ABCD0 /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				A17E3C0DE1234567890ABCDE /* AskZyraxisIntent.swift */,
+			);
+			name = Intents;
+			path = Intents;
 			sourceTree = "<group>";
 		};
 		E6D41EE2FE4AD0920ED3D516 /* App */ = {
@@ -589,6 +601,7 @@
 				C1E6209BD54C3C276DA7CF1F /* NotificationService.swift in Sources */,
 				0BF2C77275CD25E6667AF9A1 /* SettingsStore.swift in Sources */,
 				B10C0FFEE1234567890ABCDF /* ContactService.swift in Sources */,
+				A17E3C0DE1234567890ABCDF /* AskZyraxisIntent.swift in Sources */,
 				EF3A9F6C405AC393BBB5EABC /* KeychainService.swift in Sources */,
 				A83CBC0163BBBF15F638B718 /* CommandInputBar.swift in Sources */,
 				58E2610CEBBEDE553DB4A689 /* ConversationTranscriptView.swift in Sources */,

@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import UIKit
 
 /// Premium futuristic ZYRAXIS home screen for iPhone.
 ///
@@ -21,6 +22,8 @@ public struct MainAssistantView: View {
     @State private var micLevel: Float = 0
     @State private var showingSettings = false
     @State private var sendTask: Task<Void, Never>?
+    @State private var shareText: String = ""
+    @State private var showingShare = false
     // Background grace task (~30s): lets an in-flight reply finish after the
     // app backgrounds. iOS still suspends the app afterwards — this is NOT
     // continuous background listening (impossible for third-party apps).
@@ -81,6 +84,15 @@ public struct MainAssistantView: View {
                                     Button("Clear") { deps.clearTranscript() }
                                         .font(ZyraxisTheme.tech(10))
                                         .foregroundStyle(.white.opacity(0.5))
+                                    Button("Share") {
+                                        shareText = deps.conversation.exportText()
+                                        showingShare = !shareText.isEmpty
+                                    }
+                                    .font(ZyraxisTheme.tech(10))
+                                    .foregroundStyle(.white.opacity(0.5))
+                                    .sheet(isPresented: $showingShare) {
+                                        ShareSheet(items: [shareText])
+                                    }
                                 }
                                 ConversationTranscriptView(messages: deps.messages)
                                     .frame(minHeight: 120, maxHeight: 300)
@@ -357,7 +369,7 @@ public struct MainAssistantView: View {
             deps.stateMachine.fail(with: .voice("Microphone permission denied. Enable it in iOS Settings."))
             return
         }
-        deps.voiceManager.autoStopOnSilence = deps.settings.handsFreeMode
+        deps.voiceManager.configureHandsFree(enabled: deps.settings.handsFreeMode, silenceSeconds: deps.settings.handsFreeSilenceSeconds)
         do {
             try deps.voiceManager.startListening()
             deps.stateMachine.beginListening()
@@ -388,6 +400,7 @@ public struct MainAssistantView: View {
             ))
             return
         }
+        stt.applyLocale(identifier: deps.settings.sttLocaleIdentifier)
         do {
             try stt.start()
             deps.pushActivity(.init(kind: .listening, title: "Live transcription started"))
@@ -399,6 +412,18 @@ public struct MainAssistantView: View {
             ))
         }
     }
+}
+
+/// Thin `UIActivityViewController` wrapper for transcript export.
+/// iPhone-only target, so no iPad popover source view is needed.
+private struct ShareSheet: UIViewControllerRepresentable {
+    var items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {

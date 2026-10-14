@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 /// Settings screen: placeholders + real controls.
 ///
@@ -182,7 +183,37 @@ public struct SettingsView: View {
     private var voiceSection: some View {
         Section("Voice & Microphone") {
             Toggle("Voice input enabled", isOn: binding(get: { $0.voiceEnabled }, set: { $0.voiceEnabled = $1 }))
+            Toggle("Hands-free loop (auto-send + re-listen)", isOn: binding(get: { $0.handsFreeMode }, set: { $0.handsFreeMode = $1 }))
+            HStack {
+                Text("Auto-send silence")
+                Spacer()
+                Text(String(format: "%.1fs", deps.settings.handsFreeSilenceSeconds))
+                    .font(ZyraxisTheme.tech(12))
+                    .foregroundStyle(.secondary)
+            }
+            Slider(value: binding(get: { $0.handsFreeSilenceSeconds }, set: { $0.handsFreeSilenceSeconds = $1 }), in: 0.6...3.0, step: 0.1)
             Toggle("Live transcription (STT)", isOn: binding(get: { $0.liveTranscriptionEnabled }, set: { $0.liveTranscriptionEnabled = $1 }))
+            Picker("Recognizer language", selection: binding(get: { $0.sttLocale }, set: { $0.sttLocale = $1 })) {
+                Text("System default").tag("system")
+                Text("English (US)").tag("en-US")
+                Text("Urdu").tag("ur-PK")
+                Text("Hindi").tag("hi-IN")
+            }
+            Toggle("Voice responses (TTS)", isOn: binding(get: { $0.voiceResponsesEnabled }, set: { $0.voiceResponsesEnabled = $1 }))
+            HStack {
+                Text("Speech rate")
+                Spacer()
+                Text(String(format: "%.2f", deps.settings.ttsRate))
+                    .font(ZyraxisTheme.tech(12))
+                    .foregroundStyle(.secondary)
+            }
+            Slider(value: binding(get: { $0.ttsRate }, set: { $0.ttsRate = $1 }), in: 0.25...1.0, step: 0.05)
+            Picker("Voice", selection: binding(get: { $0.ttsVoiceIdentifier }, set: { $0.ttsVoiceIdentifier = $1 })) {
+                Text("System default").tag("")
+                ForEach(AVSpeechSynthesisVoice.speechVoices(), id: \.identifier) { voice in
+                    Text("\(voice.name) (\(voice.language))").tag(voice.identifier)
+                }
+            }
             Toggle("Hands-free loop (auto-send + re-listen)", isOn: binding(get: { $0.handsFreeMode }, set: { $0.handsFreeMode = $1 }))
             Toggle("Voice responses (TTS)", isOn: binding(get: { $0.voiceResponsesEnabled }, set: { $0.voiceResponsesEnabled = $1 }))
             LabeledRow(

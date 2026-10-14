@@ -245,6 +245,12 @@ public final class ConversationManager: ObservableObject {
 
     public func snapshot() -> [ConversationMessage] { messages }
 
+    /// Plain-text transcript export for the share sheet. Roles + text only
+    /// (no timestamps — deterministic and unit-testable).
+    public func exportText() -> String {
+        messages.map { "[\($0.role.rawValue.uppercased())] \($0.text)" }.joined(separator: "\n")
+    }
+
     public func pushActivity(_ activity: AssistantActivity) {
         activities.insert(activity, at: 0)
         if activities.count > 100 {
@@ -476,6 +482,8 @@ public final class ConversationManager: ObservableObject {
     /// Speaks via the wired SpeechService (nil by default → silent).
     private func speak(_ text: String) async {
         guard let speech = speechService else { return }
+        let voiceId = settings.ttsVoiceIdentifier.isEmpty ? nil : settings.ttsVoiceIdentifier
+        await speech.applyVoiceSettings(rate: settings.ttsRate, voiceIdentifier: voiceId)
         await speech.speak(text)
     }
 

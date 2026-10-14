@@ -130,6 +130,25 @@ final class FastCommandRouterTests: XCTestCase {
         }
     }
 
+    func testSocialFrontPages() {
+        let cases = [
+            ("open x", "x.com"),
+            ("open twitter", "x.com"),
+            ("twitter", "x.com"),
+            ("open facebook", "www.facebook.com"),
+            ("facebook", "www.facebook.com"),
+            ("open snapchat", "www.snapchat.com"),
+            ("snapchat", "www.snapchat.com"),
+        ]
+        for (input, host) in cases {
+            if case .open(let req) = router.route(input) {
+                XCTAssertEqual(req.url.host ?? "", host, "input: \(input)")
+            } else {
+                XCTFail("expected open for \(input)")
+            }
+        }
+    }
+
     func testMapsFaceTimeAppStoreCommands() {
         if case .open(let req) = router.route("directions to paris") {
             XCTAssertEqual(req.url.host ?? "", "maps.apple.com")

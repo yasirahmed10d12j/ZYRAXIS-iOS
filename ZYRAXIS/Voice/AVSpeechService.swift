@@ -23,8 +23,24 @@ public final class AVSpeechService: NSObject, SpeechService {
     private let synthesizer = AVSpeechSynthesizer()
     private var watchdog: Task<Void, Never>?
 
+    /// Speaking rate 0.0...1.0 (system default 0.5). Applied per utterance.
+    public var speechRate: Float = AVSpeechUtteranceDefaultSpeechRate
+    /// Explicit voice identifier, or nil for the system default voice.
+    public var voiceIdentifier: String?
+
     public override init() {
         super.init()
+    }
+
+    /// Applies engine-synced voice settings (clamped to the valid range).
+    public func applyVoiceSettings(rate: Float, voiceIdentifier: String?) {
+        speechRate = Self.clampedRate(rate)
+        self.voiceIdentifier = voiceIdentifier
+    }
+
+    /// Valid speech rates for Settings sliders/tests.
+    public static func clampedRate(_ rate: Float) -> Float {
+        min(1.0, max(0.0, rate))
     }
 
     public func speak(_ text: String) async {
@@ -32,8 +48,13 @@ public final class AVSpeechService: NSObject, SpeechService {
         guard !trimmed.isEmpty else { return }
         stopImmediately()
         let utterance = AVSpeechUtterance(string: trimmed)
-        // System default voice + rate: respects the user's language/settings.
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+        // Explicit voice when set and valid; otherwise the system default
+        // voice (respects the user's language/settings).
+        if let id = voiceIdentifier,
+           let voice = AVSpeechSynthesisVoice(identifier: id) {
+            utterance.voice = voice
+        }
+        utterance.rate = speechRate
         utterance.preUtteranceDelay = 0
         utterance.postUtteranceDelay = 0
         synthesizer.speak(utterance)

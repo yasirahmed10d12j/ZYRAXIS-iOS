@@ -28,10 +28,15 @@ public protocol STTProvider {
     /// Sendable values, so the audio tap never shares buffers across
     /// isolation domains. Ignored unless `start()` was called.
     func ingestAudio(samples: [Float], sampleRate: Double, channels: Int)
+    /// Applies a recognizer locale (BCP-47, e.g. "ur-PK"), or nil for the
+    /// system default. Takes effect on the next `start()`.
+    func applyLocale(identifier: String?)
 }
 
 public extension STTProvider {
     func ingestAudio(samples: [Float], sampleRate: Double, channels: Int) {}
+    /// Default: locale selection unsupported (honest no-op).
+    func applyLocale(identifier: String?) {}
 }
 
 public struct STTTranscript: Equatable, Sendable {

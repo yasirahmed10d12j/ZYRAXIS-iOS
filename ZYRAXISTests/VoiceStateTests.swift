@@ -90,6 +90,12 @@ final class VoiceStateTests: XCTestCase {
         XCTAssertNil(detector.ingest(level: 0.5, at: start.addingTimeInterval(10)))
         XCTAssertEqual(detector.ingest(level: 0.5, at: start.addingTimeInterval(61)), .captureTimedOut)
     }
+
+    func testSpeechRateClamping() {
+        XCTAssertEqual(AVSpeechService.clampedRate(2.0), 1.0)
+        XCTAssertEqual(AVSpeechService.clampedRate(-1.0), 0.0)
+        XCTAssertEqual(AVSpeechService.clampedRate(0.5), 0.5, accuracy: 0.001)
+    }
 }
 
 /// STT test double: records ingest calls, performs no recognition.
