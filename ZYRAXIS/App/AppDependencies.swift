@@ -30,6 +30,7 @@ public final class AppDependencies: ObservableObject {
     private let backendService: BackendAIService
     private let geminiService: GeminiDirectService
     private let groqService: GroqDirectService
+    private let contactService: (any ContactService)?
 
     /// Resolved per access from settings: direct providers call Gemini/Groq
     /// with the user's Keychain key; backend needs its server; else mock.
@@ -67,6 +68,7 @@ public final class AppDependencies: ObservableObject {
         // ConversationManager: default-argument expressions are nonisolated.
         geminiService: GeminiDirectService? = nil,
         groqService: GroqDirectService? = nil,
+        contactService: (any ContactService)? = nil,
         voiceManager: VoiceManagerImpl,
         memoryService: any MemoryService,
         taskService: any TaskService,
@@ -84,6 +86,7 @@ public final class AppDependencies: ObservableObject {
         self.backendService = backendService
         self.geminiService = geminiService ?? GeminiDirectService()
         self.groqService = groqService ?? GroqDirectService()
+        self.contactService = contactService
         self.voiceManager = voiceManager
         self.memoryService = memoryService
         self.taskService = taskService
@@ -99,7 +102,8 @@ public final class AppDependencies: ObservableObject {
             mockService: mockService,
             backendService: backendService,
             geminiService: geminiService,
-            groqService: groqService
+            groqService: groqService,
+            contactService: contactService
         )
 
         // Forward nested ObservableObject changes so views observing only
@@ -140,6 +144,7 @@ public final class AppDependencies: ObservableObject {
             }
         )
         let voice = VoiceManagerImpl()
+        let contacts: any ContactService = SystemContactService()
         let stt = AppleSpeechTranscriber()
         voice.transcriber = stt
         let tts = AVSpeechService()
@@ -159,6 +164,7 @@ public final class AppDependencies: ObservableObject {
             backendService: backend,
             geminiService: gemini,
             groqService: groq,
+            contactService: contacts,
             voiceManager: voice,
             memoryService: memory,
             taskService: tasks,
