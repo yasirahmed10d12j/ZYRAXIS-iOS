@@ -152,6 +152,15 @@ final class DirectProviderTests: XCTestCase {
         XCTAssertEqual(GroqDirectService().model, DirectProvider.defaultGroqModel)
     }
 
+    func testDefaultGeminiModelIsSupportedStable() {
+        // Pinned to a Stable, non-preview model with free-tier access and a
+        // long support window. If Google retires it, update the default AND
+        // this test together — never silently drift to an unverified ID.
+        // Verified 2026-10-14: Stable, billing not required, shutdown no
+        // earlier than 2027-07-21 (ai.google.dev/gemini-api/docs/models).
+        XCTAssertEqual(DirectProvider.defaultGeminiModel, "gemini-3.5-flash-lite")
+    }
+
     // MARK: - Prompt + SSE helpers
 
     func testMergedTurnsCollapseSameRole() {
@@ -190,7 +199,7 @@ final class DirectProviderTests: XCTestCase {
         XCTAssertEqual(StubURLProtocol.recordedRequests.count, 1)
         let sent = try XCTUnwrap(StubURLProtocol.recordedRequests.first)
         XCTAssertEqual(sent.url?.host, "generativelanguage.googleapis.com")
-        XCTAssertTrue(sent.url?.path.contains("gemini-2.5-flash-lite:generateContent") == true)
+        XCTAssertTrue(sent.url?.path.contains("gemini-3.5-flash-lite:generateContent") == true)
         XCTAssertEqual(sent.value(forHTTPHeaderField: "x-goog-api-key"), Self.geminiKey)
         // Key must never appear in the URL (query params end up in logs).
         XCTAssertFalse(sent.url?.absoluteString.contains(Self.geminiKey) == true)

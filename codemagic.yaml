@@ -59,6 +59,9 @@ workflows:
         script: |
           #!/bin/sh
           set -e -u
+          # Fail the step when xcodebuild fails, even though its output is
+          # piped through tee (without pipefail the pipeline status is tee's).
+          set -o pipefail
           mkdir -p build/logs
           # Pick the first available iPhone simulator at runtime instead of
           # hardcoding one: the exact simulator set varies per Codemagic image.
@@ -91,6 +94,9 @@ workflows:
         script: |
           #!/bin/sh
           set -e -u
+          # Fail the step when xcodebuild fails, even though its output is
+          # piped through tee (without pipefail the pipeline status is tee's).
+          set -o pipefail
           mkdir -p build/logs
           # WHY BUILD AND NOT ARCHIVE: Xcode 16.2's `archive` action ends in an
           # Organizer validation ("Archive Missing Bundle Identifier") that cannot
@@ -204,6 +210,9 @@ workflows:
         script: |
           #!/bin/sh
           set -e -u
+          # Fail the step when the export fails, even though its output is
+          # piped through tee (without pipefail the pipeline status is tee's).
+          set -o pipefail
           mkdir -p build/logs build/ipa
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \

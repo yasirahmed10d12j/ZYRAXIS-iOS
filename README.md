@@ -199,7 +199,7 @@ The app can also call providers directly with **your own free-tier keys**:
   `https://api.groq.com/openai/v1/chat/completions` with your key
   (Gemini: `x-goog-api-key` header, never in the URL; Groq: Bearer header).
   Models are configurable per service (`model`, defaults
-  `gemini-2.5-flash-lite` / `llama-3.1-8b-instant` — vendors rotate IDs,
+  `gemini-3.5-flash-lite` / `llama-3.1-8b-instant` — vendors rotate IDs,
   verify live ones in the consoles). Timeouts use Settings → Request timeout;
   Stop cancels in flight; 401/429/5xx map to friendly errors (missing key →
   "Check the API key in Settings", never attempted without a key).

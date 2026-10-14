@@ -14,7 +14,7 @@ public enum DirectProvider {
     /// Free-tier default models. IDs rotate — verify live IDs in
     /// AI Studio (Gemini) / console.groq.com (Groq) and override via each
     /// service's `model` property. Never put keys here.
-    public static let defaultGeminiModel = "gemini-2.5-flash-lite"
+    public static let defaultGeminiModel = "gemini-3.5-flash-lite"
     public static let defaultGroqModel = "llama-3.1-8b-instant"
 
     public static let geminiBaseURL = URL(string: "https://generativelanguage.googleapis.com")!
