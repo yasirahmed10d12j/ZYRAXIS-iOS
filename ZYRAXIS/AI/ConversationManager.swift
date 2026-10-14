@@ -36,6 +36,9 @@ public final class ConversationManager: ObservableObject {
     /// Re-opens the mic for hands-free looping. Set by the UI layer; invoked
     /// after a voice-initiated turn completes while hands-free mode is on.
     public var autoListenHandler: (() -> Void)?
+    /// Executes device system actions (brightness, etc.) on the MainActor
+    /// where UIScreen is available. Provided by the UI layer.
+    public var systemActionHandler: ((SystemAction) -> Void)?
 
     /// Contact lookup for call/text/WhatsApp-by-name. Nil when unavailable
     /// (tests that never use it); contact commands then report an error.
@@ -495,20 +498,10 @@ public final class ConversationManager: ObservableObject {
         pushActivity(.init(kind: .system, title: "Opening \(request.label)"))
     }
 
-    /// Brightness change via UIScreen (public API). Volume is NOT settable
-    /// by third-party apps — answered honestly in the router, never executed.
+    /// Brightness change via system action handler (UI layer owns UIScreen).
+    /// Volume is NOT settable by third-party apps — answered honestly in the router.
     private func handleSystemAction(_ action: SystemAction) async {
-        switch action {
-        case .brightness(let level):
-            await MainActor.run { UIScreen.main.brightness = level }
-            pushActivity(.init(kind: .system, title: "Brightness set to \(Int(level * 100))%"))
-        case .brightnessUp:
-            await MainActor.run { UIScreen.main.brightness = min(1.0, UIScreen.main.brightness + 0.15) }
-            pushActivity(.init(kind: .system, title: "Brightness increased"))
-        case .brightnessDown:
-            await MainActor.run { UIScreen.main.brightness = max(0.05, UIScreen.main.brightness - 0.15) }
-            pushActivity(.init(kind: .system, title: "Brightness decreased"))
-        }
+        systemActionHandler?(action)
     }
 
     /// Creates a reminder/task via TaskService (local with notifications).
@@ -518,7 +511,7 @@ public final class ConversationManager: ObservableObject {
             return
         }
         do {
-            let task = try await tasks.create(title: text, notes: nil, dueDate: dueDate, priority: .normal)
+            let task = try await tasks.create(title: text, notes: nil, dueDate: dueDate, priority: .medium)
             let when = dueDate.map { " for \(Self.timeString(from: $0))" } ?? ""
             pushActivity(.init(kind: .system, title: "Reminder set\(when): \(task.title)"))
         } catch {

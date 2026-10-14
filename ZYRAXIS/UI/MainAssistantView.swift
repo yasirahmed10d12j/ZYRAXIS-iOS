@@ -149,6 +149,22 @@ public struct MainAssistantView: View {
                     await Self.startMic(deps)
                 }
             }
+            deps.conversation.systemActionHandler = { [weak deps] action in
+                guard let deps else { return }
+                Task { @MainActor in
+                    switch action {
+                    case .brightness(let level):
+                        UIScreen.main.brightness = level
+                        deps.pushActivity(.init(kind: .system, title: "Brightness set to \(Int(level * 100))%"))
+                    case .brightnessUp:
+                        UIScreen.main.brightness = min(1.0, UIScreen.main.brightness + 0.15)
+                        deps.pushActivity(.init(kind: .system, title: "Brightness increased"))
+                    case .brightnessDown:
+                        UIScreen.main.brightness = max(0.05, UIScreen.main.brightness - 0.15)
+                        deps.pushActivity(.init(kind: .system, title: "Brightness decreased"))
+                    }
+                }
+            }
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
