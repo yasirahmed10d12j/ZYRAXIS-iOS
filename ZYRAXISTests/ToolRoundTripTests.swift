@@ -204,9 +204,14 @@ final class ToolRoundTripTests: XCTestCase {
     func testAlarmToolInvalidTimeRejected() async throws {
         let registry = DefaultToolRegistry()
         await registry.register(AlarmTool())
-        let result = try await registry.execute(call: ToolCall(toolName: "set_alarm", argumentsJSON: "{\"time\":\"invalid\"}"))
-        XCTAssertFalse(result.succeeded)
-        XCTAssertTrue(result.outputJSON.contains("Invalid time format") || result.error?.contains("Invalid time format") == true)
+        do {
+            _ = try await registry.execute(call: ToolCall(toolName: "set_alarm", argumentsJSON: "{\"time\":\"invalid\"}"))
+            XCTFail("expected ToolError for invalid time")
+        } catch let e as ToolError {
+            XCTAssertTrue(e.errorDescription?.contains("Invalid time format") == true, "got: \(e.errorDescription ?? "")")
+        } catch {
+            XCTFail("expected ToolError, got \(error)")
+        }
     }
 
     func testAlarmToolValidTimeReturnsOpenedMessage() async throws {

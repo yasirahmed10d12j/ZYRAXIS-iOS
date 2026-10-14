@@ -79,7 +79,7 @@ public struct AlarmTool: AgentTool, Sendable {
     public func execute(input: ToolInput) async throws -> ToolOutput {
         let args = try decodeArguments(input.rawJSON)
         guard let time = args["time"] as? String else {
-            return ToolOutput(text: "Missing required 'time' parameter (HH:mm).")
+            throw ToolError.executionFailed("Missing required 'time' parameter (HH:mm).")
         }
         let label = (args["label"] as? String) ?? "ZYRAXIS alarm"
 
@@ -88,7 +88,7 @@ public struct AlarmTool: AgentTool, Sendable {
         guard parts.count == 2,
               let hour = Int(parts[0]), hour >= 0 && hour <= 23,
               let minute = Int(parts[1]), minute >= 0 && minute <= 59 else {
-            return ToolOutput(text: "Invalid time format. Use HH:mm (24h), e.g. 07:30.")
+            throw ToolError.executionFailed("Invalid time format. Use HH:mm (24h), e.g. 07:30.")
         }
 
         // Open Clock app via Shortcuts URL (most reliable) or generic clock link
@@ -106,7 +106,7 @@ public struct AlarmTool: AgentTool, Sendable {
         ].compactMap { $0 }
 
         guard let url = urls.first else {
-            return ToolOutput(text: "Could not construct Clock/Shortcuts URL.")
+            throw ToolError.executionFailed("Could not construct Clock/Shortcuts URL.")
         }
 
         await MainActor.run {
