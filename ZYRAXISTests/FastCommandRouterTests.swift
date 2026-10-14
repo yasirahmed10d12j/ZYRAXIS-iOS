@@ -111,7 +111,7 @@ final class FastCommandRouterTests: XCTestCase {
         }
         if case .open(let req) = router.route("whatsapp 15551234567") {
             XCTAssertEqual(req.url.absoluteString, "https://wa.me/15551234567")
-            XCTAssertEqual(req.kind, .whatsapp)
+            XCTAssertEqual(req.kind, .whatsApp)
         } else {
             XCTFail("expected direct whatsapp open")
         }

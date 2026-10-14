@@ -102,7 +102,7 @@ public struct OpenRequest: Equatable, Sendable {
         let digits = rawDigits.filter { $0.isNumber }
         guard digits.count >= 7,
               let url = URL(string: "https://wa.me/\(digits)") else { return nil }
-        return OpenRequest(url: url, label: "WhatsApp chat", kind: .whatsapp)
+        return OpenRequest(url: url, label: "WhatsApp chat", kind: .whatsApp)
     }
 
     /// Fixed Instagram front page (universal link, no user input).
