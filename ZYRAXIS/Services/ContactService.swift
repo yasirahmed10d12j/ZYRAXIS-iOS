@@ -58,8 +58,9 @@ public final class SystemContactService: ContactService {
     }
 
     /// Digits-only phone number (no spaces, dashes, or `+`), 7+ digits.
-    /// Pure function — unit-testable without contacts access.
-    public static func normalizedDigits(_ raw: String) -> String? {
+    /// Pure function of its arguments (no actor state), so `nonisolated`:
+    /// callable from nonisolated test contexts. Unit-testable without contacts access.
+    public nonisolated static func normalizedDigits(_ raw: String) -> String? {
         let digits = String(
             raw.unicodeScalars
                 .filter { CharacterSet.decimalDigits.contains($0) }
