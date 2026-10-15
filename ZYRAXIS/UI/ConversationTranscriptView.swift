@@ -30,6 +30,7 @@ public struct ConversationTranscriptView: View {
                         ForEach(messages) { msg in
                             MessageRow(message: msg)
                                 .id(msg.id)
+                                .equatable()
                         }
                     }
                     .padding(.vertical, 4)
@@ -46,9 +47,15 @@ public struct ConversationTranscriptView: View {
     }
 }
 
-private struct MessageRow: View {
+private struct MessageRow: View, Equatable {
 
     var message: ConversationMessage
+
+    // Only the changed row re-renders while streaming: without this every
+    // keystroke rebuilds the whole transcript list (the lag on long chats).
+    static func == (lhs: MessageRow, rhs: MessageRow) -> Bool {
+        lhs.message == rhs.message
+    }
 
     private var accent: Color {
         switch message.role {

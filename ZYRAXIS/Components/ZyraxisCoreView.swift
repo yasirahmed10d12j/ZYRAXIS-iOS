@@ -8,13 +8,16 @@ public struct ZyraxisCoreView: View {
 
     public var state: AssistantState
     public var micLevel: Float // 0...1 from VoiceManager
+    /// Reduce Motion: static frame, no rotation/pulse (battery + older GPUs).
+    public var reduceMotion: Bool
 
     @State private var rotation: Double = 0
     @State private var pulse: CGFloat = 1.0
 
-    public init(state: AssistantState, micLevel: Float = 0) {
+    public init(state: AssistantState, micLevel: Float = 0, reduceMotion: Bool = false) {
         self.state = state
         self.micLevel = micLevel
+        self.reduceMotion = reduceMotion
     }
 
     private var glow: Color { ZyraxisTheme.glow(for: state) }
@@ -64,7 +67,12 @@ public struct ZyraxisCoreView: View {
             }
         }
         .frame(width: 260, height: 260)
+        // Flattened to one GPU layer: gradients + blur + shadow re-render
+        // every mic-level tick, and compositing them separately each frame
+        // is what drops frames on older GPUs.
+        .drawingGroup()
         .onAppear {
+            guard !reduceMotion else { return }
             withAnimation(.linear(duration: 14).repeatForever(autoreverses: false)) {
                 rotation = 360
             }
@@ -73,6 +81,7 @@ public struct ZyraxisCoreView: View {
             }
         }
         .onChange(of: state) { _, new in
+            guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: new.isActive ? 1.1 : 2.4).repeatForever(autoreverses: true)) {
                 pulse = new.isActive ? 1.06 : 1.0
             }

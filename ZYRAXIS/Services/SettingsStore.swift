@@ -110,6 +110,11 @@ public final class SettingsStore: ObservableObject {
     @Published public var handsFreeMode: Bool {
         didSet { defaults.set(handsFreeMode, forKey: Keys.handsFree) }
     }
+    /// Reduce Motion: static core (no rotation/pulse), for older devices or
+    /// users sensitive to animation. Purely visual — behavior unchanged.
+    @Published public var reduceMotion: Bool {
+        didSet { defaults.set(reduceMotion, forKey: Keys.reduceMotion) }
+    }
 
     /// The UserDefaults instance mutations persist to (`.standard` by
     /// default; isolated suites in tests).
@@ -137,6 +142,7 @@ public final class SettingsStore: ObservableObject {
         static let ttsRate = "zyraxis.settings.ttsRate"
         static let ttsVoice = "zyraxis.settings.ttsVoice"
         static let handsFreeSilence = "zyraxis.settings.handsFreeSilence"
+        static let reduceMotion = "zyraxis.settings.reduceMotion"
     }
 
     public init(defaults: UserDefaults = .standard) {
@@ -173,6 +179,7 @@ public final class SettingsStore: ObservableObject {
         self.ttsVoiceIdentifier = d.string(forKey: Keys.ttsVoice) ?? ""
         let hs = d.double(forKey: Keys.handsFreeSilence)
         self.handsFreeSilenceSeconds = hs > 0 ? min(3.0, max(0.6, hs)) : 1.2
+        self.reduceMotion = d.object(forKey: Keys.reduceMotion) as? Bool ?? false
     }
 
     /// Validated snapshot for the networking layer. The active HTTP base
@@ -231,5 +238,6 @@ public final class SettingsStore: ObservableObject {
         ttsVoiceIdentifier = ""
         handsFreeSilenceSeconds = 1.2
         liveTranscriptionEnabled = false
+        reduceMotion = false
     }
 }

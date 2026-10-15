@@ -45,7 +45,8 @@ public struct MainAssistantView: View {
                     VStack(spacing: 16) {
                         ZyraxisCoreView(
                             state: deps.stateMachine.state,
-                            micLevel: micLevel
+                            micLevel: micLevel,
+                            reduceMotion: deps.settings.reduceMotion
                         )
                         .padding(.top, 6)
 

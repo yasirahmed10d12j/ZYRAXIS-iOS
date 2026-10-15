@@ -615,12 +615,17 @@ public final class ConversationManager: ObservableObject {
 
     /// Brightness change via system action handler (UI layer owns UIScreen).
     /// Volume is NOT settable by third-party apps — answered honestly in the router.
+    /// Hands-free re-arms below: in-app turns continue the loop. App-opening
+    /// turns (open/contact-call) deliberately do NOT — iOS backgrounds us and
+    /// the mic cannot survive there.
     private func handleSystemAction(_ action: SystemAction) async {
+        defer { maybeAutoListen() }
         systemActionHandler?(action)
     }
 
     /// Creates a reminder/task via TaskService (local with notifications).
     private func handleReminder(text: String, dueDate: Date?) async {
+        defer { maybeAutoListen() }
         guard let tasks = taskService else {
             pushActivity(.init(kind: .error, title: "Reminders unavailable on this build"))
             return
@@ -636,6 +641,7 @@ public final class ConversationManager: ObservableObject {
 
     /// Reads back active reminders as a friendly assistant message.
     private func handleMyReminders() async {
+        defer { maybeAutoListen() }
         guard let tasks = taskService else {
             pushActivity(.init(kind: .error, title: "Reminders unavailable on this build"))
             return
@@ -940,8 +946,14 @@ public final class ConversationManager: ObservableObject {
         messages.append(ConversationMessage(role: .assistant, text: reply))
         pushActivity(.init(kind: .speaking, title: "Answered locally (fast path)"))
         stateMachine.transition(to: .idle)
+        // Re-arm first (same as AI turns), speak in parallel after — the mic
+        // re-opens while the reply plays, matching finishCompleted behavior
+        // (speaker bleed while replies play is a known device limitation).
+        maybeAutoListen()
         if settings.voiceResponsesEnabled {
-            await speak(reply)
+            Task { [weak self] in
+                await self?.speak(reply)
+            }
         }
     }
 }

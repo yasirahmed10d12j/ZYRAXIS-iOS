@@ -270,6 +270,7 @@ public struct SettingsView: View {
             Text("ZYRAXIS is dark-first; light mode is provided for accessibility.")
                 .font(ZyraxisTheme.caption())
                 .foregroundStyle(.secondary)
+            Toggle("Reduce Motion (static core, less battery)", isOn: binding(get: { $0.reduceMotion }, set: { $0.reduceMotion = $1 }))
         }
     }
 

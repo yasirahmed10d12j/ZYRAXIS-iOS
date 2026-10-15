@@ -31,6 +31,12 @@ public protocol VoiceManager: AnyObject {
 /// the utterance; an absolute capture cap always ends it. The manager stops
 /// the mic on either event, which ends STT gracefully so the trailing final
 /// still arrives and auto-sends — no second tap required.
+///
+/// Adaptive floor: real rooms have different noise floors, and a fixed
+/// threshold tuned in one room misbehaves in another (mic never auto-closes
+/// in noise, or speech never registers). The detector tracks the quietest
+/// level seen since reset and raises the speech threshold above it —
+/// never below the configured floor, so tuned behavior is preserved.
 public struct SilenceDetector: Equatable, Sendable {
 
     public enum Event: Equatable, Sendable {
@@ -38,16 +44,31 @@ public struct SilenceDetector: Equatable, Sendable {
         case captureTimedOut
     }
 
-    /// RMS level at/above which audio counts as speech.
+    /// RMS level at/above which audio counts as speech (base floor).
     public var silenceThreshold: Float = 0.08
     /// Quiet seconds after speech before the utterance ends.
     public var silenceSeconds: TimeInterval = 1.2
     /// Absolute capture cap from mic-open (safety, speech or not).
     public var maxCaptureSeconds: TimeInterval = 60
+    /// Floor multiplier: effective threshold = max(silenceThreshold,
+    /// noiseFloor * floorMultiplier + floorOffset).
+    public var floorMultiplier: Float = 3.0
+    public var floorOffset: Float = 0.02
 
     private var startedAt: Date?
     private var heardSpeech = false
     private var silenceStart: Date?
+    private var noiseFloor: Float = .greatestFiniteMagnitude
+
+    /// Quietest level observed since reset (room noise estimate).
+    public var currentNoiseFloor: Float {
+        noiseFloor == .greatestFiniteMagnitude ? 0 : noiseFloor
+    }
+
+    /// Effective speech threshold after floor adaptation.
+    public var effectiveThreshold: Float {
+        max(silenceThreshold, currentNoiseFloor * floorMultiplier + floorOffset)
+    }
 
     public init() {}
 
@@ -55,6 +76,7 @@ public struct SilenceDetector: Equatable, Sendable {
         startedAt = date
         heardSpeech = false
         silenceStart = nil
+        noiseFloor = .greatestFiniteMagnitude
     }
 
     /// Feed one metered level. Returns an event at most once per boundary
@@ -67,7 +89,8 @@ public struct SilenceDetector: Equatable, Sendable {
         if date.timeIntervalSince(start) >= maxCaptureSeconds {
             return .captureTimedOut
         }
-        if level >= silenceThreshold {
+        noiseFloor = min(noiseFloor, max(0, level))
+        if level >= effectiveThreshold {
             heardSpeech = true
             silenceStart = nil
             return nil
@@ -116,6 +139,20 @@ public final class VoiceManagerImpl: ObservableObject, @preconcurrency VoiceMana
         silenceDetector.silenceSeconds = min(3.0, max(0.6, silenceSeconds))
     }
     private var silenceDetector = SilenceDetector()
+
+    /// UI level throttle: state (and every observing view) updates at most
+    /// on a real move (>0.04) or every 120ms — the tap fires ~43/sec.
+    /// Internal for tests. Audio/STT/silence paths are never throttled.
+    var lastLevelSent: Float = -1
+    var lastLevelAt: Date = .distantPast
+
+    func emitLevel(_ level: Float, at date: Date = Date()) {
+        guard abs(level - lastLevelSent) > 0.04
+                || date.timeIntervalSince(lastLevelAt) > 0.12 else { return }
+        lastLevelSent = level
+        lastLevelAt = date
+        state = .listening(level: level)
+    }
 
     public init() {
         observeInterruptions()
@@ -186,9 +223,14 @@ public final class VoiceManagerImpl: ObservableObject, @preconcurrency VoiceMana
             let sampleRate = buffer.format.sampleRate
             let channels = Int(buffer.format.channelCount)
             Task { @MainActor [weak self] in
-                self?.state = .listening(level: level)
+                // Audio ALWAYS forwards (never starve STT); only the UI-bound
+                // level publish is throttled — ~43 state updates/sec forced a
+                // full view re-render per audio buffer (the mic-open lag).
+                // Silence detection still sees every level (utterance timing
+                // must not skip), it just doesn't publish to the UI.
                 self?.forwardTranscription(samples: samples, sampleRate: sampleRate, channels: channels)
                 self?.ingestLevelForAutoStop(level: level)
+                self?.emitLevel(level)
             }
         }
         engine.prepare()
