@@ -133,7 +133,7 @@ public final class AppleSpeechTranscriber: ObservableObject, @preconcurrency STT
         samples.withUnsafeBufferPointer { src in
             guard let base = src.baseAddress,
                   let dst = buffer.floatChannelData?.pointee else { return }
-            dst.assign(from: base, count: samples.count)
+            dst.update(from: base, count: samples.count)
         }
         request.append(buffer)
     }

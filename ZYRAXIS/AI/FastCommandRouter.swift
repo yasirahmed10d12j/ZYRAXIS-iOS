@@ -387,7 +387,8 @@ public struct FastCommandRouter: Sendable {
         for phrase in ["flashlight off", "torch off", "flash off", "turn off flashlight", "turn off torch",
                        "turn the flashlight off", "turn off the flashlight", "switch off flashlight"] {
             if norm == phrase { return .system(.torch(false)) }
-        }        if norm == "brightness up" || norm == "increase brightness" || norm == "brighter" {
+        }
+        if norm == "brightness up" || norm == "increase brightness" || norm == "brighter" {
             return .system(.brightnessUp)
         }
         if norm == "brightness down" || norm == "decrease brightness" || norm == "dim" || norm == "dimmer" {
@@ -471,7 +472,10 @@ public struct FastCommandRouter: Sendable {
               let nameRange = Range(m.range(at: 1), in: norm),
               let digitRange = Range(m.range(at: 2), in: norm) else { return nil }
         var name = String(norm[nameRange]).trimmingCharacters(in: .whitespacesAndNewlines)
-        for lead in ["this is ", "that is ", "it is "] {
+        // Strip sentence leads ("this is …") and command verbs ("remember …")
+        // so "remember mom's number …" yields "mom", not "remember mom".
+        for lead in ["this is ", "that is ", "it is ", "don't forget ", "dont forget ",
+                     "note down ", "remember ", "note ", "save "] {
             if name.hasPrefix(lead) { name = String(name.dropFirst(lead.count)); break }
         }
         name = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -497,7 +501,8 @@ public struct FastCommandRouter: Sendable {
         let rest = String(norm[Range(m.range, in: norm)!.upperBound...])
         if rest.filter({ $0.isNumber }).count >= 7 { return nil }
         var name = String(norm[nameRange]).trimmingCharacters(in: .whitespacesAndNewlines)
-        for lead in ["this is ", "that is ", "it is ", "this ", "that "] {
+        for lead in ["this is ", "that is ", "it is ", "this ", "that ",
+                     "don't forget ", "dont forget ", "note down ", "remember ", "note ", "save "] {
             if name.hasPrefix(lead) { name = String(name.dropFirst(lead.count)); break }
         }
         name = name.trimmingCharacters(in: .whitespacesAndNewlines)
