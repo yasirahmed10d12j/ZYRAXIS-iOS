@@ -83,7 +83,14 @@
 		D1EC7B001A2B3C4D5E6F7082 /* DirectProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1EC7B001A2B3C4D5E6F7081 /* DirectProvider.swift */; };
 		6E1A2B3C4D5E6F708192A3B5 /* GeminiDirectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A2B3C4D5E6F708192A3B4 /* GeminiDirectService.swift */; };
 		6E1A2B3C4D5E6F708192A3C7 /* GroqDirectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A2B3C4D5E6F708192A3C6 /* GroqDirectService.swift */; };
+		A50EC79A1B2C3D4E5F607184 /* HubSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50EC79A1B2C3D4E5F607183 /* HubSync.swift */; };
 		7E1A2B3C4D5E6F708192A3D9 /* DirectProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A2B3C4D5E6F708192A3D8 /* DirectProviderTests.swift */; };
+		B61DC0DE0000000000000002 /* RemoteCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B61DC0DE0000000000000001 /* RemoteCommandTests.swift */; };
+		B62DC0DE0000000000000002 /* MemoryCommandsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B62DC0DE0000000000000001 /* MemoryCommandsTests.swift */; };
+		B63DC0DE0000000000000002 /* LocalSkillsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B63DC0DE0000000000000001 /* LocalSkillsTests.swift */; };
+		B64DC0DE0000000000000002 /* StudyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B64DC0DE0000000000000001 /* StudyTests.swift */; };
+		B65DC0DE0000000000000002 /* HandsFreeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B65DC0DE0000000000000001 /* HandsFreeTests.swift */; };
+		B66DC0DE0000000000000002 /* SyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B66DC0DE0000000000000001 /* SyncTests.swift */; };
 		B10C0FFEE1234567890ABCDF /* ContactService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10C0FFEE1234567890ABCDE /* ContactService.swift */; };
 		A17E3C0DE1234567890ABCDF /* AskZyraxisIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17E3C0DE1234567890ABCDE /* AskZyraxisIntent.swift */; };
 		415CD76F61CD7005D4F3337C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5B15DB5AF2A709DD87F02198 /* Assets.xcassets */; };
@@ -168,7 +175,14 @@
 		D1EC7B001A2B3C4D5E6F7081 /* DirectProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DirectProvider.swift; path = DirectProvider.swift; sourceTree = "<group>"; };
 		6E1A2B3C4D5E6F708192A3B4 /* GeminiDirectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GeminiDirectService.swift; path = GeminiDirectService.swift; sourceTree = "<group>"; };
 		6E1A2B3C4D5E6F708192A3C6 /* GroqDirectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GroqDirectService.swift; path = GroqDirectService.swift; sourceTree = "<group>"; };
+		A50EC79A1B2C3D4E5F607183 /* HubSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HubSync.swift; path = HubSync.swift; sourceTree = "<group>"; };
 		7E1A2B3C4D5E6F708192A3D8 /* DirectProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DirectProviderTests.swift; path = DirectProviderTests.swift; sourceTree = "<group>"; };
+		B61DC0DE0000000000000001 /* RemoteCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RemoteCommandTests.swift; path = RemoteCommandTests.swift; sourceTree = "<group>"; };
+		B62DC0DE0000000000000001 /* MemoryCommandsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MemoryCommandsTests.swift; path = MemoryCommandsTests.swift; sourceTree = "<group>"; };
+		B63DC0DE0000000000000001 /* LocalSkillsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LocalSkillsTests.swift; path = LocalSkillsTests.swift; sourceTree = "<group>"; };
+		B64DC0DE0000000000000001 /* StudyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StudyTests.swift; path = StudyTests.swift; sourceTree = "<group>"; };
+		B65DC0DE0000000000000001 /* HandsFreeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HandsFreeTests.swift; path = HandsFreeTests.swift; sourceTree = "<group>"; };
+		B66DC0DE0000000000000001 /* SyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SyncTests.swift; path = SyncTests.swift; sourceTree = "<group>"; };
 		F2C5B33075AEB8DD4A529EF8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
 		5B15DB5AF2A709DD87F02198 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Assets.xcassets; sourceTree = "<group>"; };
 		FBBEF4C78CF48650F02E7541 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
@@ -227,9 +241,19 @@
 				CB94505789953FBAD1C5D145 /* Theme */,
 				15DE86E3EFDB8DA671EDF3BD /* Resources */,
 				A17E3C0DE1234567890ABCD0 /* Intents */,
+				A50EC79A1B2C3D4E5F607182 /* Sync */,
 			);
 			name = ZYRAXIS;
 			path = ZYRAXIS;
+			sourceTree = "<group>";
+		};
+		A50EC79A1B2C3D4E5F607182 /* Sync */ = {
+			isa = PBXGroup;
+			children = (
+				A50EC79A1B2C3D4E5F607183 /* HubSync.swift */,
+			);
+			name = Sync;
+			path = Sync;
 			sourceTree = "<group>";
 		};
 		A17E3C0DE1234567890ABCD0 /* Intents */ = {
@@ -452,6 +476,12 @@
 				4B954263F73EA917A8C89BDB /* ToolRoundTripTests.swift */,
 				B4C79F13A13F732A8B4CB198 /* VoiceStateTests.swift */,
 				7E1A2B3C4D5E6F708192A3D8 /* DirectProviderTests.swift */,
+				B61DC0DE0000000000000001 /* RemoteCommandTests.swift */,
+				B62DC0DE0000000000000001 /* MemoryCommandsTests.swift */,
+				B63DC0DE0000000000000001 /* LocalSkillsTests.swift */,
+				B64DC0DE0000000000000001 /* StudyTests.swift */,
+				B65DC0DE0000000000000001 /* HandsFreeTests.swift */,
+				B66DC0DE0000000000000001 /* SyncTests.swift */,
 			);
 			name = ZYRAXISTests;
 			path = ZYRAXISTests;
@@ -624,6 +654,7 @@
 				D1EC7B001A2B3C4D5E6F7082 /* DirectProvider.swift in Sources */,
 				6E1A2B3C4D5E6F708192A3B5 /* GeminiDirectService.swift in Sources */,
 				6E1A2B3C4D5E6F708192A3C7 /* GroqDirectService.swift in Sources */,
+				A50EC79A1B2C3D4E5F607184 /* HubSync.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -649,6 +680,12 @@
 				09FED6CD68D9D877E74FC777 /* ToolRoundTripTests.swift in Sources */,
 				4D2F1C49F9B8AA058A6C5E46 /* VoiceStateTests.swift in Sources */,
 				7E1A2B3C4D5E6F708192A3D9 /* DirectProviderTests.swift in Sources */,
+				B61DC0DE0000000000000002 /* RemoteCommandTests.swift in Sources */,
+				B62DC0DE0000000000000002 /* MemoryCommandsTests.swift in Sources */,
+				B63DC0DE0000000000000002 /* LocalSkillsTests.swift in Sources */,
+				B64DC0DE0000000000000002 /* StudyTests.swift in Sources */,
+				B65DC0DE0000000000000002 /* HandsFreeTests.swift in Sources */,
+				B66DC0DE0000000000000002 /* SyncTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
