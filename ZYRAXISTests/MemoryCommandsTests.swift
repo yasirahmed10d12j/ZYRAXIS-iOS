@@ -127,6 +127,7 @@ final class MemoryCommandsTests: XCTestCase {
 
     func testCallUnknownNameReportsError() async {
         let (manager, scripted) = makeManager()
+        manager.contactService = SpyContactService() // empty directory: contacts miss, memory miss
         await manager.send("call ghost")
         XCTAssertEqual(scripted.callCount, 0)
         XCTAssertTrue(manager.activities.contains { $0.title.contains("Couldn't find") })
