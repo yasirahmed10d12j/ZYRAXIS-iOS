@@ -29,8 +29,8 @@ public struct ConversationTranscriptView: View {
                     LazyVStack(spacing: 10) {
                         ForEach(messages) { msg in
                             MessageRow(message: msg)
-                                .id(msg.id)
                                 .equatable()
+                                .id(msg.id)
                         }
                     }
                     .padding(.vertical, 4)
