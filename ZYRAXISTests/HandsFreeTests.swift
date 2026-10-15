@@ -100,7 +100,8 @@ final class HandsFreeTests: XCTestCase {
         manager.taskService = SpyTaskService() // create() refuses — loop must survive anyway
         var relistens = 0
         manager.autoListenHandler = { relistens += 1 }
-        await manager.acceptExternalTranscript("remind me to stretch in 5 minutes", isFinal: true)        XCTAssertEqual(relistens, 1)
+        await manager.acceptExternalTranscript("remind me to stretch in 5 minutes", isFinal: true)
+        XCTAssertEqual(relistens, 1)
         XCTAssertTrue(manager.activities.contains { $0.title.contains("Couldn't create reminder") })
     }
 
