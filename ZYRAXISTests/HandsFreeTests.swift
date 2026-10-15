@@ -87,7 +87,7 @@ final class HandsFreeTests: XCTestCase {
     // MARK: - Re-listen coverage
 
     func testVoiceFastAnswerRelistens() async {
-        let (manager, scripted) = makeManager()
+        let (manager, scripted, _) = makeManager()
         var relistens = 0
         manager.autoListenHandler = { relistens += 1 }
         await manager.acceptExternalTranscript("what time is it", isFinal: true)
@@ -96,17 +96,16 @@ final class HandsFreeTests: XCTestCase {
     }
 
     func testVoiceReminderRelistensEvenOnFailure() async {
-        let (manager, _) = makeManager()
+        let (manager, _, _) = makeManager()
         manager.taskService = SpyTaskService() // create() refuses — loop must survive anyway
         var relistens = 0
         manager.autoListenHandler = { relistens += 1 }
-        await manager.acceptExternalTranscript("remind me to stretch in 5 minutes", isFinal: true)
-        XCTAssertEqual(relistens, 1)
+        await manager.acceptExternalTranscript("remind me to stretch in 5 minutes", isFinal: true)        XCTAssertEqual(relistens, 1)
         XCTAssertTrue(manager.activities.contains { $0.title.contains("Couldn't create reminder") })
     }
 
     func testAppOpeningTurnDoesNotRelisten() async {
-        let (manager, _) = makeManager()
+        let (manager, _, _) = makeManager()
         var opened: [OpenRequest] = []
         manager.openURLHandler = { opened.append($0) }
         var relistens = 0
