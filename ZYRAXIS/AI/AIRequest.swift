@@ -23,19 +23,25 @@ public struct ContextLimits: Codable, Equatable, Sendable {
     }
 }
 
-/// Minimal, non-sensitive device context. Never includes identifiers,
-/// location, contacts, or anything private.
+/// Minimal, non-sensitive device context. Never includes hardware IDs,
+/// location, contacts, or anything private. `deviceId` is a random
+/// per-install UUID (resettable) sent ONLY to the user's own backend for
+/// ecosystem identity — never to vendors.
 public struct DeviceContext: Codable, Equatable, Sendable {
     public var deviceModel: String?
     public var osVersion: String?
     public var appVersion: String?
     public var locale: String?
+    public var deviceId: String?
+    public var deviceName: String?
 
-    public init(deviceModel: String? = nil, osVersion: String? = nil, appVersion: String? = nil, locale: String? = nil) {
+    public init(deviceModel: String? = nil, osVersion: String? = nil, appVersion: String? = nil, locale: String? = nil, deviceId: String? = nil, deviceName: String? = nil) {
         self.deviceModel = deviceModel
         self.osVersion = osVersion
         self.appVersion = appVersion
         self.locale = locale
+        self.deviceId = deviceId
+        self.deviceName = deviceName
     }
 }
 

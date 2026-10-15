@@ -115,6 +115,13 @@ public final class SettingsStore: ObservableObject {
     @Published public var reduceMotion: Bool {
         didSet { defaults.set(reduceMotion, forKey: Keys.reduceMotion) }
     }
+    /// Stable per-install device identity (random UUID — NOT a hardware ID,
+    /// resettable by reinstall/reset). Sent ONLY to the user's own backend
+    /// (session_start + hub sync) so the ecosystem recognizes this device
+    /// across turns. Never to vendors, never in logs.
+    @Published public var deviceId: String {
+        didSet { defaults.set(deviceId, forKey: Keys.deviceId) }
+    }
 
     /// The UserDefaults instance mutations persist to (`.standard` by
     /// default; isolated suites in tests).
@@ -143,6 +150,7 @@ public final class SettingsStore: ObservableObject {
         static let ttsVoice = "zyraxis.settings.ttsVoice"
         static let handsFreeSilence = "zyraxis.settings.handsFreeSilence"
         static let reduceMotion = "zyraxis.settings.reduceMotion"
+        static let deviceId = "zyraxis.settings.deviceId"
     }
 
     public init(defaults: UserDefaults = .standard) {
@@ -180,6 +188,13 @@ public final class SettingsStore: ObservableObject {
         let hs = d.double(forKey: Keys.handsFreeSilence)
         self.handsFreeSilenceSeconds = hs > 0 ? min(3.0, max(0.6, hs)) : 1.2
         self.reduceMotion = d.object(forKey: Keys.reduceMotion) as? Bool ?? false
+        if let saved = d.string(forKey: Keys.deviceId), !saved.isEmpty {
+            self.deviceId = saved
+        } else {
+            let fresh = UUID().uuidString
+            d.set(fresh, forKey: Keys.deviceId)
+            self.deviceId = fresh
+        }
     }
 
     /// Validated snapshot for the networking layer. The active HTTP base
@@ -239,5 +254,6 @@ public final class SettingsStore: ObservableObject {
         handsFreeSilenceSeconds = 1.2
         liveTranscriptionEnabled = false
         reduceMotion = false
+        deviceId = UUID().uuidString
     }
 }

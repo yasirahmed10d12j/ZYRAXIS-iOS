@@ -178,10 +178,14 @@ public struct SessionStartPayload: Codable, Equatable, Sendable {
     public var sessionId: String
     public var clientModel: String?
     public var appVersion: String?
-    public init(sessionId: String, clientModel: String? = nil, appVersion: String? = nil) {
+    public var deviceId: String?
+    public var deviceName: String?
+    public init(sessionId: String, clientModel: String? = nil, appVersion: String? = nil, deviceId: String? = nil, deviceName: String? = nil) {
         self.sessionId = sessionId
         self.clientModel = clientModel
         self.appVersion = appVersion
+        self.deviceId = deviceId
+        self.deviceName = deviceName
     }
 }
 

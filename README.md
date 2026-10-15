@@ -253,6 +253,7 @@ Non-streaming fallback: `POST {baseURL}/api/{apiVersion}/chat`
 | Quiz mode ("quiz me on …" → questions, grading, score) + study briefing | ✅ REAL engine logic, tested with doubles; needs an AI provider for questions (local LLM works) |
 | Hands-free loop repair (adaptive noise floor, re-listen after in-app turns) | ✅ REAL logic, tested with doubles; app-opening turns stay silent (iOS backgrounds us); UNVERIFIED on device |
 | Lag fixes (throttled mic-level UI, row-level re-render, flattened core, Reduce Motion) | ✅ REAL, tested where unit-testable; device fps UNVERIFIED — REQUIRES DEVICE |
+| Ecosystem sync (shared memory/tasks via hub, stable device identity) | ✅ REAL offline-first decorators, tested with fakes; server API live; needs backend URL + key |
 | Volume / Phone-keypad control | ❌ impossible — iOS offers no public API; answered honestly on-device |
 | Connection diagnostics + T0…T4 latency | ✅ REAL values or "—" (DEBUG section, no fake metrics) |
 | Dev/Staging/Production environments | ✅ REAL URL resolution with production fallback |

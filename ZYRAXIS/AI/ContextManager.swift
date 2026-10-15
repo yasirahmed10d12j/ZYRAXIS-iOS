@@ -92,14 +92,17 @@ public struct ContextManager: Sendable {
 }
 
 public extension DeviceContext {
-    /// Non-sensitive device facts only. No identifiers, no location.
+    /// Non-sensitive device facts only. No hardware IDs, no location.
+    /// deviceName is the user-visible name ("Yasir's iPhone"); deviceId is
+    /// filled by the engine from Settings (per-install random UUID).
     static func current() -> DeviceContext {
         #if canImport(UIKit)
         return DeviceContext(
             deviceModel: UIDevice.current.model,
             osVersion: UIDevice.current.systemVersion,
             appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-            locale: Locale.current.identifier
+            locale: Locale.current.identifier,
+            deviceName: UIDevice.current.name
         )
         #else
         return DeviceContext(

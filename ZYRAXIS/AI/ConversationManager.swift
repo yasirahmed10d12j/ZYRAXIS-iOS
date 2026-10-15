@@ -243,13 +243,15 @@ public final class ConversationManager: ObservableObject {
             memories = []
         }
         let availableTools = await toolRegistry.allTools().map { $0.name }
-        let context = contextManager.build(
+        var context = contextManager.build(
             history: messages,
             memories: memories,
             state: stateMachine.state,
             availableTools: availableTools,
             systemPrompt: AppConfig.systemPrompt
         )
+        // Ecosystem identity: per-install random ID to OUR backend only.
+        context.device?.deviceId = settings.deviceId
 
         // Backend selected but unreachable-by-configuration → honest error, no network attempt.
         if settings.selectedProvider == .customBackend && !settings.backendConfig.isConfigured {

@@ -2,7 +2,7 @@ import Foundation
 
 /// Structured development logging for ZYRAXIS.
 ///
-/// Categories: AI, NETWORK, WEBSOCKET, VOICE, STATE, TOOL, MEMORY, SECURITY.
+/// Categories: AI, NETWORK, WEBSOCKET, VOICE, STATE, TOOL, MEMORY, TASKS, SECURITY.
 ///
 /// Security guarantees:
 /// - verbose logs compile to prints in DEBUG only
@@ -17,6 +17,7 @@ public enum LogCategory: String, Sendable {
     case state = "STATE"
     case tool = "TOOL"
     case memory = "MEMORY"
+    case tasks = "TASKS"
     case security = "SECURITY"
 }
 

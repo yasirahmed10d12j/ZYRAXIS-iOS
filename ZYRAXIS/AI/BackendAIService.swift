@@ -191,7 +191,9 @@ public final class BackendAIService: @preconcurrency AIService {
             try await sendEnvelope(type: .sessionStart, requestId: requestId, payload: SessionStartPayload(
                 sessionId: requestId.uuidString,
                 clientModel: ctx.device?.deviceModel,
-                appVersion: ctx.device?.appVersion
+                appVersion: ctx.device?.appVersion,
+                deviceId: ctx.device?.deviceId,
+                deviceName: ctx.device?.deviceName
             ))
             try await sendEnvelope(type: .userMessage, requestId: requestId, payload: UserMessagePayload(text: text, context: ctx))
             continuation.yield(.thinking(requestId: requestId))
