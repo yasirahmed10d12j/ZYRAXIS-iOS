@@ -53,6 +53,15 @@ public final class ConversationManager: ObservableObject {
     /// after typing. Consumed (reset) whenever it triggers or cancels.
     private var voiceInitiatedTurn = false
 
+    /// Active quiz (topic + running score). In-memory only — a restart or a
+    /// new quiz clears it. Internal for tests.
+    struct QuizSession: Equatable, Sendable {
+        var topic: String
+        var asked: Int
+        var correct: Int
+    }
+    var quiz: QuizSession?
+
     /// Future TTS hook. Nil in Phase 2 → text-only responses (state still
     /// flows PROCESSING → SPEAKING → IDLE momentarily).
     public var speechService: (any SpeechService)?
@@ -190,20 +199,46 @@ public final class ConversationManager: ObservableObject {
             messages.append(ConversationMessage(role: .user, text: trimmed))
             await handleSavedPlace(place)
             return
+        case .quizStart(let topic):
+            messages.append(ConversationMessage(role: .user, text: trimmed))
+            await startQuiz(topic: topic)
+            return
+        case .quizStop:
+            await stopQuiz()
+            return
+        case .quizScore:
+            await reportQuizScore()
+            return
+        case .brief:
+            await handleBrief()
+            return
         case .none:
             break
         }
 
+        if quiz != nil {
+            // Active quiz and plain text → grade the answer, don't chat.
+            await gradeQuizAnswer(trimmed)
+            return
+        }
+        messages.append(ConversationMessage(role: .user, text: trimmed))
+        await startStreamTurn(userText: trimmed, aiText: trimmed)
+    }
+
+    /// Shared streaming tail: placeholder → bounded context → stream → done.
+    /// userText is displayed (transcript/activity); aiText is what the model
+    /// receives (identical except quiz turns, which wrap grading prompts).
+    /// Callers append the user message themselves; this never does.
+    private func startStreamTurn(userText: String, aiText: String) async {
         let requestId = UUID()
         currentRequestId = requestId
-        messages.append(ConversationMessage(role: .user, text: trimmed))
-        pushActivity(.init(kind: .thinking, title: "Reasoning", detail: String(trimmed.prefix(120))))
+        pushActivity(.init(kind: .thinking, title: "Reasoning", detail: String(userText.prefix(120))))
         stateMachine.beginProcessing()
 
         // Bounded context: history + relevant memory + state + tools.
         let memories: [MemoryItem]
         if settings.memoryEnabled {
-            memories = (try? await memoryService.search(query: trimmed, limit: contextManager.limits.maxMemories)) ?? []
+            memories = (try? await memoryService.search(query: aiText, limit: contextManager.limits.maxMemories)) ?? []
         } else {
             memories = []
         }
@@ -234,7 +269,7 @@ public final class ConversationManager: ObservableObject {
 
         let aiRequest = AIRequest(
             id: requestId,
-            text: trimmed,
+            text: aiText,
             context: context,
             timeout: settings.requestTimeout
         )
@@ -684,6 +719,116 @@ public final class ConversationManager: ObservableObject {
             ))
             pushActivity(.init(kind: .system, title: "\(pretty) address unknown"))
         }
+    }
+
+    // MARK: - Quiz mode
+
+    /// Starts a quiz: resets score, asks the AI for question 1. The user
+    /// message is appended by the caller; this never does.
+    private func startQuiz(topic: String) async {
+        cancelActiveRequest(announce: false)
+        if stateMachine.state == .error {
+            _ = stateMachine.resetToIdle()
+        }
+        quiz = QuizSession(topic: topic, asked: 0, correct: 0)
+        pushActivity(.init(kind: .thinking, title: "Quiz started", detail: String(topic.prefix(80))))
+        await startStreamTurn(
+            userText: "quiz me on \(topic)",
+            aiText: "You are quizzing the user on \"\(topic)\". Ask question 1 now: ONE short question only, no preamble, no extra text, no score line."
+        )
+        if quiz != nil { quiz?.asked = 1 }
+    }
+
+    /// Grades a quiz answer: sends the AI a grading prompt, then consumes a
+    /// trailing SCORE:1/SCORE:0 marker (tally + strip, never shown). A reply
+    /// without a marker still counts the question, never the point.
+    private func gradeQuizAnswer(_ text: String) async {
+        guard var session = quiz else { return }
+        let question = messages.last(where: { $0.role == .assistant })?.text ?? "(previous question)"
+        messages.append(ConversationMessage(role: .user, text: text))
+        let prompt = """
+            Quiz on "\(session.topic)" (question \(session.asked + 1)).
+            The question you asked: "\(question)"
+            The user's answer: "\(text)"
+            First say Correct! or Not quite, with a one-line explanation. Then ask the next question on the same topic: ONE short question only, no extra text. End your reply with a line containing only SCORE:1 if the answer was correct, else SCORE:0.
+            """
+        await startStreamTurn(userText: text, aiText: prompt)
+        guard quiz != nil else { return } // stopped mid-turn — stay stopped
+        session.asked += 1
+        if let idx = messages.lastIndex(where: { $0.role == .assistant }) {
+            var parts = messages[idx].text.components(separatedBy: "\n")
+            while let last = parts.last,
+                  last.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                parts.removeLast()
+            }
+            if let marker = parts.last?.trimmingCharacters(in: .whitespacesAndNewlines),
+               marker == "SCORE:1" || marker == "SCORE:0" {
+                parts.removeLast()
+                if marker == "SCORE:1" { session.correct += 1 }
+                messages[idx].text = parts.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+                pushActivity(.init(kind: .system, title: "Quiz: \(session.correct)/\(session.asked) correct"))
+            }
+        }
+        quiz = session
+    }
+
+    private func stopQuiz() async {
+        guard let session = quiz else {
+            await handleFastAnswer(userText: "stop quiz", reply: "No quiz running — say \"quiz me on\" followed by a topic.")
+            return
+        }
+        quiz = nil
+        await handleFastAnswer(
+            userText: "stop quiz",
+            reply: "Quiz over — \(session.topic): \(session.correct) out of \(session.asked) correct."
+        )
+    }
+
+    private func reportQuizScore() async {
+        guard let session = quiz else {
+            await handleFastAnswer(userText: "quiz score", reply: "No quiz running — say \"quiz me on\" followed by a topic.")
+            return
+        }
+        await handleFastAnswer(
+            userText: "quiz score",
+            reply: "Quiz: \(session.topic) — \(session.correct) out of \(session.asked) correct so far."
+        )
+    }
+
+    // MARK: - Study briefing
+
+    /// Morning/study briefing, fully offline: date + active reminders +
+    /// recent memory highlights + next-step hint. No AI call.
+    private func handleBrief() async {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .full
+        formatter.timeStyle = .none
+        var lines = ["Good morning! Today is \(formatter.string(from: Date()))."]
+        do {
+            let tasks = try await taskService?.list(filter: .active) ?? []
+            if tasks.isEmpty {
+                lines.append("No active reminders.")
+            } else {
+                let top = tasks.prefix(5).map { task -> String in
+                    if let due = task.effectiveDueDate {
+                        return "• \(task.title) (due \(Self.timeString(from: due)))"
+                    }
+                    return "• \(task.title)"
+                }.joined(separator: "\n")
+                lines.append("\(tasks.count) active reminder\(tasks.count == 1 ? "" : "s"):\n\(top)")
+            }
+        } catch {
+            lines.append("Couldn't read reminders.")
+        }
+        do {
+            let mems = try await memoryService.search(query: "", limit: 5)
+            let notes = mems.prefix(3).map { "• \(String($0.content.prefix(80)))" }.joined(separator: "\n")
+            if !notes.isEmpty { lines.append("From memory:\n\(notes)") }
+        } catch {
+            // Memory stays optional in a briefing — never fail it.
+        }
+        lines.append("Say \"quiz me on …\" for a quick round.")
+        await handleFastAnswer(userText: "morning brief", reply: lines.joined(separator: "\n\n"))
     }
 
     /// Speaks via the wired SpeechService (nil by default → silent).

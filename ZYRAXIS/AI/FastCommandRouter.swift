@@ -291,6 +291,15 @@ public enum FastCommandAction: Equatable, Sendable {
     /// Look up a remembered person/thing ("who is Rehan"). Engine reads
     /// memory; a miss falls through to the AI like a normal message.
     case whoIs(String)
+    /// Start a quiz ("quiz me on capitals"). Engine asks via AI, grades
+    /// answers, tracks score. Say "stop quiz" to finish.
+    case quizStart(String)
+    /// Finish the active quiz with a score report.
+    case quizStop
+    /// Read the active quiz score.
+    case quizScore
+    /// Morning/study briefing (date + reminders + memory highlights, offline).
+    case brief
     /// Saved-place directions ("directions home"). Engine resolves the
     /// address from memory ("my home address is …").
     case savedPlace(String)
@@ -332,6 +341,14 @@ public struct FastCommandRouter: Sendable {
             return .answer("The current time is \(Self.timeString()).")
         case "my reminders", "read my reminders", "show my reminders", "my tasks", "show my tasks", "reminders":
             return .myReminders
+        case "stop quiz", "end quiz", "quit quiz", "finish quiz":
+            return .quizStop
+        case "quiz score", "my score", "quiz status":
+            return .quizScore
+        case "morning brief", "brief me", "daily brief", "study brief", "my briefing", "briefing", "day brief":
+            return .brief
+        case "quiz me", "quiz":
+            return .answer("Say \"quiz me on\" followed by a topic — e.g. \"quiz me on capitals\".")
         case "volume":
             return .answer("Volume can only be changed with the iPhone side buttons — iOS doesn't let apps set it.")
         case "phone", "open phone", "dialer", "open dialer", "keypad", "phone app":
@@ -362,6 +379,9 @@ public struct FastCommandRouter: Sendable {
         }
         if let who = Self.whoIsAction(for: norm) {
             return who
+        }
+        if let quiz = Self.quizStartAction(for: norm) {
+            return quiz
         }
         if let place = Self.savedPlaceAction(for: norm) {
             return place
@@ -522,6 +542,20 @@ public struct FastCommandRouter: Sendable {
         guard let rest = remainder(after: ["who is", "who's"], in: norm),
               !rest.isEmpty, rest.count <= 20, !rest.contains(" ") else { return nil }
         return .whoIs(rest)
+    }
+
+    /// "quiz me on <topic>" — topic required (bare "quiz me" is answered
+    /// with usage in the route switch). Anything non-empty goes; the AI
+    /// asks the questions, the engine tracks score.
+    static func quizStartAction(for norm: String) -> FastCommandAction? {
+        for prefix in ["quiz me on ", "test me on ", "ask me questions about ",
+                       "quiz on ", "quiz me about ", "test me about "] {
+            if norm.hasPrefix(prefix) {
+                let rest = String(norm.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+                if !rest.isEmpty, rest.count <= 100 { return .quizStart(rest) }
+            }
+        }
+        return nil
     }
 
     /// Saved places: "directions home", "take me home", "navigate to work".
