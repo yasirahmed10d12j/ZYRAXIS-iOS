@@ -41,4 +41,19 @@ public enum NetworkError: LocalizedError, Equatable, Sendable {
         default: return .server(statusCode: code, message: message)
         }
     }
+
+    /// Failures worth trying the NEXT provider for (busy/overloaded/dead).
+    /// Auth, config, decoding and user-cancel never fall back — retrying
+    /// those can only burn time or loop.
+    public var isFallbackWorthy: Bool {
+        switch self {
+        case .timeout, .transport, .noConnection:
+            return true
+        case .server(let code, _):
+            return code == 429 || code >= 500
+        case .invalidURL, .cancelled, .unauthorized, .forbidden,
+             .notFound, .decoding, .webSocket:
+            return false
+        }
+    }
 }

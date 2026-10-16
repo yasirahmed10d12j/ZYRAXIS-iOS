@@ -84,8 +84,8 @@ public final class ConversationManager: ObservableObject {
     private let fastRouter: FastCommandRouter
     private let mockService: any AIService
     private let backendService: any AIService
-    private let geminiService: GeminiDirectService
-    private let groqService: GroqDirectService
+    private let geminiService: any AIService
+    private let groqService: any AIService
 
     private var streamTask: Task<Void, Never>?
     private var lastSeq: [UUID: Int] = [:]
@@ -106,8 +106,8 @@ public final class ConversationManager: ObservableObject {
         // a default instance below. Default-argument expressions are
         // nonisolated, so `= GeminiDirectService()` here would not compile
         // (MainActor-isolated init called from a nonisolated context).
-        geminiService: GeminiDirectService? = nil,
-        groqService: GroqDirectService? = nil,
+        geminiService: (any AIService)? = nil,
+        groqService: (any AIService)? = nil,
         contactService: (any ContactService)? = nil
     ) {
         self.stateMachine = stateMachine
@@ -370,26 +370,73 @@ public final class ConversationManager: ObservableObject {
         let requestId = request.id
         // Resolve inside the task: `activeService` is a non-Sendable
         // existential and must never be captured by the @Sendable task above.
-        let service = activeService
-        do {
-            for try await event in service.streamMessage(request) {
-                try Task.checkCancellation()
-                guard event.requestId == requestId, requestId == currentRequestId else {
-                    // Stale event from a superseded/cancelled request — drop.
+        // Fallback chain: busy/overloaded provider (429/5xx/timeout) par
+        // agla configured provider try hota hai — user 30s ghoorta nahi.
+        var services = fallbackCandidates(startingWith: activeService)
+        while let service = services.first {
+            services.removeFirst()
+            do {
+                for try await event in service.streamMessage(request) {
+                    try Task.checkCancellation()
+                    guard event.requestId == requestId, requestId == currentRequestId else {
+                        // Stale event from a superseded/cancelled request — drop.
+                        continue
+                    }
+                    await handle(event: event, requestId: requestId)
+                }
+                // Stream ended without a terminal event (service-dependent):
+                // finalize only if this request is still current and incomplete.
+                if requestId == currentRequestId {
+                    finishCompleted(requestId: requestId, text: accumulated[requestId] ?? "")
+                }
+                return
+            } catch is CancellationError {
+                handleCancelled(requestId: requestId)
+                return
+            } catch {
+                guard requestId == currentRequestId else { return } // superseded
+                if isFallbackWorthy(error), !services.isEmpty {
+                    // Fresh attempt, fresh accumulation: the next provider's
+                    // seq restarts at 1, so reset the dup/stale guards.
+                    accumulated[requestId] = ""
+                    lastSeq.removeValue(forKey: requestId)
+                    updatePlaceholder(requestId: requestId, text: "")
+                    pushActivity(.init(kind: .system, title: "\(service.provider.rawValue) busy — backup try kar raha hu"))
+                    ZyraxisLogger.log(.ai, "fallback \(service.provider.rawValue) -> \(services.first?.provider.rawValue ?? "?")")
                     continue
                 }
-                await handle(event: event, requestId: requestId)
+                handleFailure(requestId: requestId, error: error)
+                return
             }
-            // Stream ended without a terminal event (service-dependent):
-            // finalize only if this request is still current and incomplete.
-            if requestId == currentRequestId {
-                finishCompleted(requestId: requestId, text: accumulated[requestId] ?? "")
-            }
-        } catch is CancellationError {
-            handleCancelled(requestId: requestId)
-        } catch {
-            handleFailure(requestId: requestId, error: error)
         }
+    }
+
+    /// Candidate services in try-order. Mock/dev modes never fall back.
+    /// Backend sirf configured hone par (bina URL ke 30s hang nahi).
+    private func fallbackCandidates(startingWith first: any AIService) -> [any AIService] {
+        let firstProvider = first.provider
+        guard firstProvider == .gemini || firstProvider == .groq || firstProvider == .customBackend else {
+            return [first]
+        }
+        let order: [AIProvider] = [.gemini, .groq, .customBackend]
+        var out: [any AIService] = [first]
+        for p in order where p != firstProvider {
+            switch p {
+            case .gemini: out.append(geminiService)
+            case .groq: out.append(groqService)
+            case .customBackend:
+                if settings.backendConfig.isConfigured { out.append(backendService) }
+            default: break
+            }
+        }
+        return out
+    }
+
+    private func isFallbackWorthy(_ error: Error) -> Bool {
+        if let net = error as? NetworkError { return net.isFallbackWorthy }
+        // Non-typed transport failures (URLError etc.) bhi retry layak.
+        if (error as NSError).domain == NSURLErrorDomain { return true }
+        return false
     }
 
     private func handle(event: AIStreamEvent, requestId: UUID) async {

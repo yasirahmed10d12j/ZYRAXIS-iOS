@@ -6,7 +6,8 @@ import XCTest
 @MainActor
 final class ScriptedAIService: AIService {
 
-    let provider: AIProvider = .mock
+    /// Mutable so one double can stand in for gemini/groq in fallback tests.
+    var provider: AIProvider = .mock
     var callCount = 0
     var builder: (UUID) -> [AIStreamEvent] = { _ in [] }
     var failWith: Error?
@@ -203,6 +204,78 @@ final class ConversationEngineTests: XCTestCase {
         }
         await manager.send("again")
         XCTAssertEqual(sm.state, .idle)
+    }
+
+    // MARK: - Provider fallback (Gemini busy -> Groq)
+
+    private func makeFallbackManager(
+        geminiFail: Error?,
+        groqText: String = "groq backup",
+        provider: AIProvider = .gemini
+    ) -> (ConversationManager, ScriptedAIService, ScriptedAIService, AssistantStateMachine, SettingsStore) {
+        let sm = AssistantStateMachine()
+        let settings = SettingsStore()
+        settings.selectedProvider = provider
+        let gemini = ScriptedAIService()
+        gemini.provider = .gemini
+        gemini.failWith = geminiFail
+        let groq = ScriptedAIService()
+        groq.provider = .groq
+        groq.builder = { id in
+            [.completed(requestId: id, response: AIResponse(text: groqText, requestId: id))]
+        }
+        let manager = ConversationManager(
+            stateMachine: sm,
+            settings: settings,
+            memoryService: InMemoryMemoryService(),
+            toolRegistry: DefaultToolRegistry(),
+            mockService: ScriptedAIService(),
+            backendService: MockAIService(delayNanoseconds: 0),
+            geminiService: gemini,
+            groqService: groq
+        )
+        return (manager, gemini, groq, sm, settings)
+    }
+
+    func testGeminiOverloadFallsBackToGroq() async {
+        let (manager, gemini, groq, sm, _) = makeFallbackManager(
+            geminiFail: NetworkError.server(statusCode: 503, message: "overloaded")
+        )
+        await manager.send("namaste")
+        XCTAssertEqual(gemini.callCount, 1)
+        XCTAssertEqual(groq.callCount, 1, "backup provider must be tried")
+        let text = manager.messages.last(where: { $0.role == .assistant })?.text ?? ""
+        XCTAssertTrue(text.contains("groq backup"), "got: \(text)")
+        XCTAssertEqual(sm.state, .idle)
+        XCTAssertTrue(manager.activities.contains(where: { $0.title.contains("backup") }))
+    }
+
+    func testGeminiTimeoutFallsBackToGroq() async {
+        let (manager, _, groq, sm, _) = makeFallbackManager(geminiFail: NetworkError.timeout)
+        await manager.send("hello")
+        XCTAssertEqual(groq.callCount, 1)
+        XCTAssertEqual(sm.state, .idle)
+    }
+
+    func testAuthErrorDoesNotFallBack() async {
+        let (manager, gemini, groq, sm, _) = makeFallbackManager(
+            geminiFail: NetworkError.unauthorized
+        )
+        await manager.send("hello")
+        XCTAssertEqual(gemini.callCount, 1)
+        XCTAssertEqual(groq.callCount, 0, "auth failures must not burn the backup")
+        XCTAssertEqual(sm.state, .error)
+    }
+
+    func testMockProviderNeverFallsBack() async {
+        // Dev mock mode: single attempt, same as before.
+        let (manager, scripted, sm, _) = makeManager(
+            builder: { _ in [] },
+            failWith: NetworkError.timeout
+        )
+        await manager.send("will fail")
+        XCTAssertEqual(sm.state, .error)
+        XCTAssertGreaterThan(scripted.callCount, 0)
     }
 
     func testFastCommandBypassesAI() async {
