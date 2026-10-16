@@ -300,6 +300,9 @@ public enum FastCommandAction: Equatable, Sendable {
     case quizScore
     /// Morning/study briefing (date + reminders + memory highlights, offline).
     case brief
+    /// Romantic mode on/off. On: AI turns get a warm, poetic style;
+    /// fast facts stay factual. Triggered only by the exact secret phrases.
+    case romanticMode(Bool)
     /// Saved-place directions ("directions home"). Engine resolves the
     /// address from memory ("my home address is …").
     case savedPlace(String)
@@ -349,6 +352,10 @@ public struct FastCommandRouter: Sendable {
             return .brief
         case "quiz me", "quiz":
             return .answer("Say \"quiz me on\" followed by a topic — e.g. \"quiz me on capitals\".")
+        case "kaccha papad":
+            return .romanticMode(true)
+        case "pakka papad":
+            return .romanticMode(false)
         case "volume":
             return .answer("Volume can only be changed with the iPhone side buttons — iOS doesn't let apps set it.")
         case "phone", "open phone", "dialer", "open dialer", "keypad", "phone app":

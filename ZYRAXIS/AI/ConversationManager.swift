@@ -62,6 +62,16 @@ public final class ConversationManager: ObservableObject {
     }
     var quiz: QuizSession?
 
+    /// Style instruction appended to the AI system prompt while romantic
+    /// mode is on. Fast facts stay factual — only AI turns turn poetic.
+    /// Tasteful by construction: warm and charming, always respectful.
+    static let romanticSuffix = """
+
+        Style note (romantic mode is ON): reply warm, affectionate and a little
+        poetic, like a charming companion. Keep it tasteful and respectful.
+        Match the user's language (English, Urdu, or Hindi).
+        """
+
     /// Future TTS hook. Nil in Phase 2 → text-only responses (state still
     /// flows PROCESSING → SPEAKING → IDLE momentarily).
     public var speechService: (any SpeechService)?
@@ -212,6 +222,15 @@ public final class ConversationManager: ObservableObject {
         case .brief:
             await handleBrief()
             return
+        case .romanticMode(let on):
+            settings.romanticMode = on
+            await handleFastAnswer(
+                userText: trimmed,
+                reply: on
+                    ? "Romantic mode on — talk to me, jaan. ❤"
+                    : "Romantic mode off. Back to business."
+            )
+            return
         case .none:
             break
         }
@@ -243,12 +262,14 @@ public final class ConversationManager: ObservableObject {
             memories = []
         }
         let availableTools = await toolRegistry.allTools().map { $0.name }
+        let prompt = AppConfig.systemPrompt
+            + (settings.romanticMode ? Self.romanticSuffix : "")
         var context = contextManager.build(
             history: messages,
             memories: memories,
             state: stateMachine.state,
             availableTools: availableTools,
-            systemPrompt: AppConfig.systemPrompt
+            systemPrompt: prompt
         )
         // Ecosystem identity: per-install random ID to OUR backend only.
         context.device?.deviceId = settings.deviceId
@@ -804,7 +825,6 @@ public final class ConversationManager: ObservableObject {
     }
 
     // MARK: - Study briefing
-
     /// Morning/study briefing, fully offline: date + active reminders +
     /// recent memory highlights + next-step hint. No AI call.
     private func handleBrief() async {

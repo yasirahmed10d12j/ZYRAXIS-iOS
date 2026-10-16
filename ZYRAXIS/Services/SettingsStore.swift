@@ -115,6 +115,11 @@ public final class SettingsStore: ObservableObject {
     @Published public var reduceMotion: Bool {
         didSet { defaults.set(reduceMotion, forKey: Keys.reduceMotion) }
     }
+    /// Romantic mode: AI turns reply warm and poetic. Secret-trigger only
+    /// ("kaccha papad" on, "pakka papad" off). Default OFF.
+    @Published public var romanticMode: Bool {
+        didSet { defaults.set(romanticMode, forKey: Keys.romanticMode) }
+    }
     /// Stable per-install device identity (random UUID — NOT a hardware ID,
     /// resettable by reinstall/reset). Sent ONLY to the user's own backend
     /// (session_start + hub sync) so the ecosystem recognizes this device
@@ -150,6 +155,7 @@ public final class SettingsStore: ObservableObject {
         static let ttsVoice = "zyraxis.settings.ttsVoice"
         static let handsFreeSilence = "zyraxis.settings.handsFreeSilence"
         static let reduceMotion = "zyraxis.settings.reduceMotion"
+        static let romanticMode = "zyraxis.settings.romanticMode"
         static let deviceId = "zyraxis.settings.deviceId"
     }
 
@@ -188,6 +194,7 @@ public final class SettingsStore: ObservableObject {
         let hs = d.double(forKey: Keys.handsFreeSilence)
         self.handsFreeSilenceSeconds = hs > 0 ? min(3.0, max(0.6, hs)) : 1.2
         self.reduceMotion = d.object(forKey: Keys.reduceMotion) as? Bool ?? false
+        self.romanticMode = d.object(forKey: Keys.romanticMode) as? Bool ?? false
         if let saved = d.string(forKey: Keys.deviceId), !saved.isEmpty {
             self.deviceId = saved
         } else {
@@ -254,6 +261,7 @@ public final class SettingsStore: ObservableObject {
         handsFreeSilenceSeconds = 1.2
         liveTranscriptionEnabled = false
         reduceMotion = false
+        romanticMode = false
         deviceId = UUID().uuidString
     }
 }

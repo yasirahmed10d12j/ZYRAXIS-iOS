@@ -91,6 +91,7 @@
 		B64DC0DE0000000000000002 /* StudyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B64DC0DE0000000000000001 /* StudyTests.swift */; };
 		B65DC0DE0000000000000002 /* HandsFreeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B65DC0DE0000000000000001 /* HandsFreeTests.swift */; };
 		B66DC0DE0000000000000002 /* SyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B66DC0DE0000000000000001 /* SyncTests.swift */; };
+		B67DC0DE0000000000000002 /* RomanticModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B67DC0DE0000000000000001 /* RomanticModeTests.swift */; };
 		B10C0FFEE1234567890ABCDF /* ContactService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10C0FFEE1234567890ABCDE /* ContactService.swift */; };
 		A17E3C0DE1234567890ABCDF /* AskZyraxisIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17E3C0DE1234567890ABCDE /* AskZyraxisIntent.swift */; };
 		415CD76F61CD7005D4F3337C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5B15DB5AF2A709DD87F02198 /* Assets.xcassets */; };
@@ -183,6 +184,7 @@
 		B64DC0DE0000000000000001 /* StudyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StudyTests.swift; path = StudyTests.swift; sourceTree = "<group>"; };
 		B65DC0DE0000000000000001 /* HandsFreeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HandsFreeTests.swift; path = HandsFreeTests.swift; sourceTree = "<group>"; };
 		B66DC0DE0000000000000001 /* SyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SyncTests.swift; path = SyncTests.swift; sourceTree = "<group>"; };
+		B67DC0DE0000000000000001 /* RomanticModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RomanticModeTests.swift; path = RomanticModeTests.swift; sourceTree = "<group>"; };
 		F2C5B33075AEB8DD4A529EF8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
 		5B15DB5AF2A709DD87F02198 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Assets.xcassets; sourceTree = "<group>"; };
 		FBBEF4C78CF48650F02E7541 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
@@ -482,6 +484,7 @@
 				B64DC0DE0000000000000001 /* StudyTests.swift */,
 				B65DC0DE0000000000000001 /* HandsFreeTests.swift */,
 				B66DC0DE0000000000000001 /* SyncTests.swift */,
+				B67DC0DE0000000000000001 /* RomanticModeTests.swift */,
 			);
 			name = ZYRAXISTests;
 			path = ZYRAXISTests;
@@ -686,6 +689,7 @@
 				B64DC0DE0000000000000002 /* StudyTests.swift in Sources */,
 				B65DC0DE0000000000000002 /* HandsFreeTests.swift in Sources */,
 				B66DC0DE0000000000000002 /* SyncTests.swift in Sources */,
+				B67DC0DE0000000000000002 /* RomanticModeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
