@@ -97,7 +97,7 @@ final class WoLServiceTests: XCTestCase {
             return
         }
         XCTAssertEqual(request.httpMethod, "POST")
-        XCTAssertEqual(request.url?.path, "/api/wol/config")
+        XCTAssertEqual(request.url?.path, "/api/v1/wol/config")
         XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-token-123")
 
         let body = try JSONDecoder().decode([String: String].self, from: api.capturedRequest!.httpBody ?? Data())
@@ -158,7 +158,7 @@ final class WoLServiceTests: XCTestCase {
             return
         }
         XCTAssertEqual(request.httpMethod, "POST")
-        XCTAssertEqual(request.url?.path, "/api/wol/wake")
+        XCTAssertEqual(request.url?.path, "/api/v1/wol/wake")
         XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-token-123")
         XCTAssertEqual(service.lastStatus, "Magic packet sent (HTTP 200)")
         XCTAssertNil(service.lastError)
