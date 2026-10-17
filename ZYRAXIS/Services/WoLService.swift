@@ -19,8 +19,8 @@ import Foundation
 public final class WoLService {
 
     /// Last observed result for UI diagnostics.
-    public private(set) var lastStatus: String?
-    public private(set) var lastError: String?
+    public internal(set) var lastStatus: String?
+    public internal(set) var lastError: String?
 
     private let api: any APIClient
     private let auth: any BackendAuthProvider

@@ -195,7 +195,7 @@ final class WoLServiceTests: XCTestCase {
 
     func testResetDiagnostics() {
         service.lastStatus = "some status"
-        service.lastError = .timeout
+        service.lastError = "some error"
         service.resetDiagnostics()
         XCTAssertNil(service.lastStatus)
         XCTAssertNil(service.lastError)
