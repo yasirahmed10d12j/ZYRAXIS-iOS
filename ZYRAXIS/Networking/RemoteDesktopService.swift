@@ -159,9 +159,7 @@ public final class RemoteDesktopService: ObservableObject {
               let payload = json["payload"] as? [String: Any],
               let sessionKey = payload["sessionKey"] as? String,
               let frameB64 = payload["frameB64"] as? String,
-              let _ = payload["width"] as? Int,
-              let _ = payload["height"] as? Int,
-        else {
+         else {
             return
         }
 

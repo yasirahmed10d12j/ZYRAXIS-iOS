@@ -19,6 +19,7 @@ public struct SettingsView: View {
     @State private var wolBroadcastInput: String = ""
     @State private var wolStatus: String = ""
     @State private var remoteDesktopSessionKey: String = ""
+    @State private var presentRemoteDesktop = false
 
     public init() {}
 
@@ -84,6 +85,16 @@ public struct SettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $presentRemoteDesktop) {
+                NavigationView {
+                    RemoteDesktopVCRepresentable(
+                        service: deps.remoteDesktopService,
+                        sessionKey: $remoteDesktopSessionKey
+                    )
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar(.hidden, for: .navigationBar)
                 }
             }
             .onAppear {
@@ -384,12 +395,7 @@ public struct SettingsView: View {
             }
             Button {
                 deps.settings.remoteDesktopSessionKey = remoteDesktopSessionKey
-                let vc = RemoteDesktopViewController(
-                    service: deps.remoteDesktopService,
-                    sessionKey: deps.settings.remoteDesktopSessionKey
-                )
-                let nav = UINavigationController(rootViewController: vc)
-                present(nav, animated: true)
+                presentRemoteDesktop = true
             } label: {
                 HStack {
                     Image(systemName: "desktopcomputer")
@@ -527,6 +533,22 @@ public struct SettingsView: View {
         } catch {
             wolStatus = "Wake failed: \(error.localizedDescription)"
         }
+    }
+}
+
+private struct RemoteDesktopVCRepresentable: UIViewControllerRepresentable {
+    let service: RemoteDesktopService
+    @Binding var sessionKey: String
+
+    func makeUIViewController(context: Context) -> RemoteDesktopViewController {
+        RemoteDesktopViewController(
+            service: service,
+            sessionKey: sessionKey
+        )
+    }
+
+    func updateUIViewController(_ uiViewController: RemoteDesktopViewController, context: Context) {
+        // Update session key if it changes
     }
 }
 
