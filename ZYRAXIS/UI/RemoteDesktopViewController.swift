@@ -87,7 +87,7 @@ public final class RemoteDesktopViewController: UIViewController {
                     x: Int(normalize(point: point).x),
                     y: Int(normalize(point: point).y),
                     button: "left",
-                    doubleClick: gesture.numberOfTaps == 2
+                    doubleClick: gesture.numberOfTapsRequired == 2
                 ))
             } catch {
                 print("Send input error: \(error)")

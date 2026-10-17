@@ -102,7 +102,7 @@ public final class RemoteDesktopService: ObservableObject {
         state = .connecting
 
         do {
-            try await webSocket.connect(url: wsURL!)
+            try await webSocket.connect(url: wsURL)
         } catch {
             state = .error("WebSocket connect failed: \(error.localizedDescription)")
             throw error
@@ -159,8 +159,8 @@ public final class RemoteDesktopService: ObservableObject {
               let payload = json["payload"] as? [String: Any],
               let sessionKey = payload["sessionKey"] as? String,
               let frameB64 = payload["frameB64"] as? String,
-              let width = payload["width"] as? Int,
-              let height = payload["height"] as? Int
+              let _ = payload["width"] as? Int,
+              let _ = payload["height"] as? Int,
         else {
             return
         }
