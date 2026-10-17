@@ -85,6 +85,8 @@
 		6E1A2B3C4D5E6F708192A3C7 /* GroqDirectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E1A2B3C4D5E6F708192A3C6 /* GroqDirectService.swift */; };
 		A50EC79A1B2C3D4E5F607184 /* HubSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50EC79A1B2C3D4E5F607183 /* HubSync.swift */; };
 		B7C7C7C7C7C7C7C7C7C7C7C7 /* WoLService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7C7C7C7C7C7C7C7C7C7C7C6 /* WoLService.swift */; };
+		D2E3F4A5B6C7D8E9F0A1B2C3 /* RemoteDesktopService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E3F4A5B6C7D8E9F0A1B2C4 /* RemoteDesktopService.swift */; };
+		D3E4F5A6B7C8D9E0F1A2B3C4 /* RemoteDesktopViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E4F5A6B7C8D9E0F1A2B3C5 /* RemoteDesktopViewController.swift */; };
 		7E1A2B3C4D5E6F708192A3D9 /* DirectProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1A2B3C4D5E6F708192A3D8 /* DirectProviderTests.swift */; };
 		B61DC0DE0000000000000002 /* RemoteCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B61DC0DE0000000000000001 /* RemoteCommandTests.swift */; };
 		B62DC0DE0000000000000002 /* MemoryCommandsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B62DC0DE0000000000000001 /* MemoryCommandsTests.swift */; };
@@ -180,6 +182,8 @@
 		6E1A2B3C4D5E6F708192A3C6 /* GroqDirectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GroqDirectService.swift; path = GroqDirectService.swift; sourceTree = "<group>"; };
 		A50EC79A1B2C3D4E5F607183 /* HubSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HubSync.swift; path = HubSync.swift; sourceTree = "<group>"; };
 		B7C7C7C7C7C7C7C7C7C7C7C6 /* WoLService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WoLService.swift; path = WoLService.swift; sourceTree = "<group>"; };
+		D2E3F4A5B6C7D8E9F0A1B2C4 /* RemoteDesktopService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RemoteDesktopService.swift; path = RemoteDesktopService.swift; sourceTree = "<group>"; };
+		D3E4F5A6B7C8D9E0F1A2B3C5 /* RemoteDesktopViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RemoteDesktopViewController.swift; path = RemoteDesktopViewController.swift; sourceTree = "<group>"; };
 		7E1A2B3C4D5E6F708192A3D8 /* DirectProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DirectProviderTests.swift; path = DirectProviderTests.swift; sourceTree = "<group>"; };
 		B61DC0DE0000000000000001 /* RemoteCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RemoteCommandTests.swift; path = RemoteCommandTests.swift; sourceTree = "<group>"; };
 		B62DC0DE0000000000000001 /* MemoryCommandsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MemoryCommandsTests.swift; path = MemoryCommandsTests.swift; sourceTree = "<group>"; };
@@ -348,6 +352,7 @@
 				1BD760087231D537D185FF49 /* NetworkError.swift */,
 				21691CC9B91A489B6221E914 /* ReconnectPolicy.swift */,
 				679CBF20B5DEDEC5D0A14FCB /* WebSocketManager.swift */,
+				D2E3F4A5B6C7D8E9F0A1B2C4 /* RemoteDesktopService.swift */,
 			);
 			name = Networking;
 			path = Networking;
@@ -425,6 +430,7 @@
 				82FD8668F3A9494C50BCE8FA /* ConversationTranscriptView.swift */,
 				658248B75423870323178154 /* MainAssistantView.swift */,
 				902A16264C26BA0A2A6017A7 /* SettingsView.swift */,
+				D3E4F5A6B7C8D9E0F1A2B3C5 /* RemoteDesktopViewController.swift */,
 			);
 			name = UI;
 			path = UI;
@@ -665,6 +671,8 @@
 				6E1A2B3C4D5E6F708192A3C7 /* GroqDirectService.swift in Sources */,
 				A50EC79A1B2C3D4E5F607184 /* HubSync.swift in Sources */,
 				B7C7C7C7C7C7C7C7C7C7C7C7 /* WoLService.swift in Sources */,
+				D2E3F4A5B6C7D8E9F0A1B2C3 /* RemoteDesktopService.swift in Sources */,
+				D3E4F5A6B7C8D9E0F1A2B3C4 /* RemoteDesktopViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
