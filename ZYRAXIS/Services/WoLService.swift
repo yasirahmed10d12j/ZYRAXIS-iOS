@@ -52,7 +52,7 @@ public final class WoLService {
         let body = try JSONEncoder().encode([
             "mac": mac,
             "broadcastAddress": broadcast,
-            "port": 9
+            "port": "9"
         ])
         var request = try api.makeRequest(
             path: "/api/wol/config",
