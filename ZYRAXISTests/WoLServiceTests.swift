@@ -40,7 +40,9 @@ private final class WoLMockAPIClient: APIClient, @unchecked Sendable {
 }
 
 /// BackendAuthProvider double for WoLService tests.
-private final class WoLMockAuthProvider: BackendAuthProvider, Sendable {
+/// @unchecked Sendable: mutable `token`/`shouldFail` are only touched from tests,
+/// never crossed actor boundaries, so this is safe.
+private final class WoLMockAuthProvider: BackendAuthProvider, @unchecked Sendable {
     var token: String? = "test-token-123"
     var shouldFail = false
 
