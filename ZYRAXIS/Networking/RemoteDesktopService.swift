@@ -101,12 +101,7 @@ public final class RemoteDesktopService: ObservableObject {
 
         state = .connecting
 
-        do {
-            try await webSocket.connect(url: wsURL)
-        } catch {
-            state = .error("WebSocket connect failed: \(error.localizedDescription)")
-            throw error
-        }
+        webSocket.connect(url: wsURL)
 
         let announce: [String: Any] = [
             "version": 1,
@@ -139,7 +134,7 @@ public final class RemoteDesktopService: ObservableObject {
     }
 
     public func sendInput(_ event: RemoteInputEvent) async throws {
-        guard case .connected(let sessionKey) = state else {
+        guard case .connected = state else {
             throw NetworkError.transport("Not connected to hub")
         }
         do {
@@ -158,8 +153,8 @@ public final class RemoteDesktopService: ObservableObject {
               type == "remote-desktop-screen",
               let payload = json["payload"] as? [String: Any],
               let sessionKey = payload["sessionKey"] as? String,
-              let frameB64 = payload["frameB64"] as? String,
-         else {
+              let frameB64 = payload["frameB64"] as? String
+        else {
             return
         }
 
