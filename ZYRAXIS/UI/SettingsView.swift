@@ -18,6 +18,7 @@ public struct SettingsView: View {
     @State private var wolMACInput: String = ""
     @State private var wolBroadcastInput: String = ""
     @State private var wolStatus: String = ""
+    @State private var remoteDesktopSessionKey: String = ""
 
     public init() {}
 
@@ -69,6 +70,7 @@ public struct SettingsView: View {
                     memorySection
                     deviceSection
                     wolSection
+                    remoteDesktopSection
                     connectionSection
                     #if DEBUG
                     diagnosticsSection
@@ -88,6 +90,7 @@ public struct SettingsView: View {
                 loadKeychainStatus()
                 wolMACInput = deps.settings.wolMACAddress
                 wolBroadcastInput = deps.settings.wolBroadcastAddress
+                remoteDesktopSessionKey = deps.settings.remoteDesktopSessionKey
             }
             .onChange(of: deps.settings.selectedProvider) { _, _ in
                 apiKeyInput = ""
@@ -363,6 +366,42 @@ public struct SettingsView: View {
             }
             .buttonStyle(.borderless)
             Text("Office desktop MAC (from `ipconfig` on the LAN PC). Power On sends a magic packet via your hub — WoL must be enabled in BIOS + Windows adapter settings, and the PC must be on AC power.")
+                .font(ZyraxisTheme.caption())
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var remoteDesktopSection: some View {
+        Section("Remote Desktop") {
+            HStack {
+                Text("Session Key")
+                Spacer()
+                TextField("Desktop session key", text: $remoteDesktopSessionKey)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .multilineTextAlignment(.trailing)
+                    .font(ZyraxisTheme.tech(12))
+            }
+            Button {
+                deps.settings.remoteDesktopSessionKey = remoteDesktopSessionKey
+                let vc = RemoteDesktopViewController(
+                    service: deps.remoteDesktopService,
+                    sessionKey: deps.settings.remoteDesktopSessionKey
+                )
+                let nav = UINavigationController(rootViewController: vc)
+                present(nav, animated: true)
+            } label: {
+                HStack {
+                    Image(systemName: "desktopcomputer")
+                    Text("Connect to Desktop")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .disabled(deps.settings.remoteDesktopSessionKey.isEmpty)
+
+            Text("Desktop must be running ZYRAXIS server with remote desktop enabled. Get session key from desktop app.")
                 .font(ZyraxisTheme.caption())
                 .foregroundStyle(.secondary)
         }

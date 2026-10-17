@@ -140,6 +140,10 @@ public final class SettingsStore: ObservableObject {
         didSet { defaults.set(wolBroadcastAddress, forKey: Keys.wolBroadcast) }
     }
 
+    @Published public var remoteDesktopSessionKey: String {
+        didSet { defaults.set(remoteDesktopSessionKey, forKey: Keys.remoteDesktopSessionKey) }
+    }
+
     /// The UserDefaults instance mutations persist to (`.standard` by
     /// default; isolated suites in tests).
     private let defaults: UserDefaults
@@ -171,6 +175,7 @@ public final class SettingsStore: ObservableObject {
         static let deviceId = "zyraxis.settings.deviceId"
         static let wolMAC = "zyraxis.settings.wolMAC"
         static let wolBroadcast = "zyraxis.settings.wolBroadcast"
+        static let remoteDesktopSessionKey = "zyraxis.settings.remoteDesktopSessionKey"
     }
 
     public init(defaults: UserDefaults = .standard) {
@@ -218,6 +223,7 @@ public final class SettingsStore: ObservableObject {
         }
         self.wolMACAddress = d.string(forKey: Keys.wolMAC) ?? ""
         self.wolBroadcastAddress = d.string(forKey: Keys.wolBroadcast) ?? "255.255.255.255"
+        self.remoteDesktopSessionKey = d.string(forKey: Keys.remoteDesktopSessionKey) ?? ""
     }
 
     /// Validated snapshot for the networking layer. The active HTTP base
@@ -281,5 +287,6 @@ public final class SettingsStore: ObservableObject {
         deviceId = UUID().uuidString
         wolMACAddress = ""
         wolBroadcastAddress = "255.255.255.255"
+        remoteDesktopSessionKey = ""
     }
 }

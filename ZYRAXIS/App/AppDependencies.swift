@@ -25,6 +25,7 @@ public final class AppDependencies: ObservableObject {
     public let toolRegistry: any ToolRegistry
     public let visionService: any VisionService
     public let wolService: WoLService
+    public let remoteDesktopService: RemoteDesktopService
     public let conversation: ConversationManager
 
     private let mockService: any AIService
@@ -77,6 +78,7 @@ public final class AppDependencies: ObservableObject {
         toolRegistry: any ToolRegistry,
         visionService: any VisionService,
         wolService: WoLService,
+        remoteDesktopService: RemoteDesktopService,
         contextManager: ContextManager = ContextManager()
     ) {
         self.stateMachine = stateMachine
@@ -96,6 +98,7 @@ public final class AppDependencies: ObservableObject {
         self.toolRegistry = toolRegistry
         self.visionService = visionService
         self.wolService = wolService
+        self.remoteDesktopService = remoteDesktopService
         self.conversation = ConversationManager(
             stateMachine: stateMachine,
             settings: settings,
@@ -172,6 +175,12 @@ public final class AppDependencies: ObservableObject {
             auth: KeychainAuthProvider(keychain: keychain),
             configProvider: { [weak settings] in settings?.backendConfig ?? .default }
         )
+        let remoteDesktop = RemoteDesktopService(
+            api: api,
+            auth: KeychainAuthProvider(keychain: keychain),
+            configProvider: { [weak settings] in settings?.backendConfig ?? .default },
+            webSocket: ws
+        )
         let deps = AppDependencies(
             stateMachine: sm,
             settings: settings,
@@ -189,7 +198,8 @@ public final class AppDependencies: ObservableObject {
             notifications: notifications,
             toolRegistry: tools,
             visionService: vision,
-            wolService: wol
+            wolService: wol,
+            remoteDesktopService: remoteDesktop
         )
         // Voice loop: mic → STT → ConversationManager. Finals auto-send;
         // partials only hint speaking state (never fabricated into messages).
