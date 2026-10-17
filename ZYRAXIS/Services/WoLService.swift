@@ -54,8 +54,9 @@ public final class WoLService {
             "broadcastAddress": broadcast,
             "port": "9"
         ])
+        let path = "/api/\(config.apiVersion)/wol/config"
         var request = try api.makeRequest(
-            path: "/api/wol/config",
+            path: path,
             method: "POST",
             body: body,
             headers: [:]
@@ -79,8 +80,9 @@ public final class WoLService {
             throw NetworkError.unauthorized
         }
 
+        let path = "/api/\(config.apiVersion)/wol/wake"
         var request = try api.makeRequest(
-            path: "/api/wol/wake",
+            path: path,
             method: "POST",
             body: nil,
             headers: [:]
