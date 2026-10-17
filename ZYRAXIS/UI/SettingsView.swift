@@ -15,6 +15,9 @@ public struct SettingsView: View {
     @State private var keychainStatus: String = ""
     @State private var showingResetConfirm = false
     @State private var deviceSnapshot = DeviceInfoProvider.collect()
+    @State private var wolMACInput: String = ""
+    @State private var wolBroadcastInput: String = ""
+    @State private var wolStatus: String = ""
 
     public init() {}
 
@@ -65,6 +68,7 @@ public struct SettingsView: View {
                     privacySection
                     memorySection
                     deviceSection
+                    wolSection
                     connectionSection
                     #if DEBUG
                     diagnosticsSection
@@ -82,6 +86,8 @@ public struct SettingsView: View {
             }
             .onAppear {
                 loadKeychainStatus()
+                wolMACInput = deps.settings.wolMACAddress
+                wolBroadcastInput = deps.settings.wolBroadcastAddress
             }
             .onChange(of: deps.settings.selectedProvider) { _, _ in
                 apiKeyInput = ""
@@ -314,6 +320,54 @@ public struct SettingsView: View {
         }
     }
 
+    // MARK: - Wake-on-LAN
+
+    private var wolSection: some View {
+        Section("Wake-on-LAN (Office PC)") {
+            HStack {
+                Text("MAC")
+                Spacer()
+                TextField("AA:BB:CC:DD:EE:FF", text: $wolMACInput)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .multilineTextAlignment(.trailing)
+                    .font(ZyraxisTheme.tech(12))
+            }
+            HStack {
+                Text("Broadcast")
+                Spacer()
+                TextField("255.255.255.255", text: $wolBroadcastInput)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .multilineTextAlignment(.trailing)
+                    .font(ZyraxisTheme.tech(12))
+            }
+            HStack {
+                Button("Save MAC") {
+                    Task {
+                        await saveWoLConfig()
+                    }
+                }
+                Button("Power On") {
+                    Task {
+                        await powerOn()
+                    }
+                }
+                .disabled(deps.settings.wolMACAddress.isEmpty)
+                Spacer()
+                if !wolStatus.isEmpty {
+                    Text(wolStatus)
+                        .font(ZyraxisTheme.caption())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .buttonStyle(.borderless)
+            Text("Office desktop MAC (from `ipconfig` on the LAN PC). Power On sends a magic packet via your hub — WoL must be enabled in BIOS + Windows adapter settings, and the PC must be on AC power.")
+                .font(ZyraxisTheme.caption())
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private var connectionSection: some View {
         Section("Connection") {
             LabeledRow(
@@ -406,6 +460,33 @@ public struct SettingsView: View {
             keychainStatus = (existing?.isEmpty == false) ? "API key present in Keychain." : "No API key stored."
         } catch {
             keychainStatus = "Keychain unavailable: \(error.localizedDescription)"
+        }
+    }
+
+    // MARK: - WoL helpers
+
+    private func saveWoLConfig() async {
+        let mac = wolMACInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let broadcast = wolBroadcastInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? "255.255.255.255" : wolBroadcastInput
+        do {
+            try await deps.wolService.configure(mac: mac, broadcast: broadcast)
+            deps.settings.wolMACAddress = mac
+            deps.settings.wolBroadcastAddress = broadcast
+            wolStatus = "MAC saved to hub."
+            wolMACInput = ""
+            wolBroadcastInput = ""
+        } catch {
+            wolStatus = "Save failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func powerOn() async {
+        do {
+            try await deps.wolService.wake()
+            wolStatus = deps.wolService.lastStatus ?? "Magic packet sent."
+        } catch {
+            wolStatus = "Wake failed: \(error.localizedDescription)"
         }
     }
 }

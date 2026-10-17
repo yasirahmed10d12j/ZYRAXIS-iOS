@@ -24,6 +24,7 @@ public final class AppDependencies: ObservableObject {
     public let notifications: any NotificationService
     public let toolRegistry: any ToolRegistry
     public let visionService: any VisionService
+    public let wolService: WoLService
     public let conversation: ConversationManager
 
     private let mockService: any AIService
@@ -75,6 +76,7 @@ public final class AppDependencies: ObservableObject {
         notifications: any NotificationService,
         toolRegistry: any ToolRegistry,
         visionService: any VisionService,
+        wolService: WoLService,
         contextManager: ContextManager = ContextManager()
     ) {
         self.stateMachine = stateMachine
@@ -93,6 +95,7 @@ public final class AppDependencies: ObservableObject {
         self.notifications = notifications
         self.toolRegistry = toolRegistry
         self.visionService = visionService
+        self.wolService = wolService
         self.conversation = ConversationManager(
             stateMachine: stateMachine,
             settings: settings,
@@ -164,6 +167,11 @@ public final class AppDependencies: ObservableObject {
         let tools: any ToolRegistry = DefaultToolRegistry(seed: [AppInfoTool(), DeviceInfoTool(), NotificationTool(), AlarmTool(), EmailTool()])
         let vision: any VisionService = UnimplementedVisionService()
         let sm = AssistantStateMachine()
+        let wol = WoLService(
+            api: api,
+            auth: KeychainAuthProvider(keychain: keychain),
+            configProvider: { [weak settings] in settings?.backendConfig ?? .default }
+        )
         let deps = AppDependencies(
             stateMachine: sm,
             settings: settings,
@@ -180,7 +188,8 @@ public final class AppDependencies: ObservableObject {
             taskService: tasks,
             notifications: notifications,
             toolRegistry: tools,
-            visionService: vision
+            visionService: vision,
+            wolService: wol
         )
         // Voice loop: mic → STT → ConversationManager. Finals auto-send;
         // partials only hint speaking state (never fabricated into messages).

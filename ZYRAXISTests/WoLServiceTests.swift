@@ -1,0 +1,201 @@
+import XCTest
+@testable import ZYRAXIS
+
+/// Minimal APIClient double for WoLService tests.
+private final class WoLMockAPIClient: APIClient, @unchecked Sendable {
+    var capturedRequest: URLRequest?
+    var shouldFail = false
+    var failError: NetworkError = .transport("mock failure")
+    var mockResponseData: Data = "{}".data(using: .utf8)!
+    var mockStatusCode: Int = 200
+
+    func sendData(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        capturedRequest = request
+        if shouldFail { throw failError }
+        let response = HTTPURLResponse(
+            url: request.url ?? URL(string: "https://example.com")!,
+            statusCode: mockStatusCode,
+            httpVersion: nil,
+            headerFields: nil
+        )!
+        return (mockResponseData, response)
+    }
+
+    func send<T: Decodable>(_ request: URLRequest, as type: T.Type) async throws -> T {
+        let (data, _) = try await sendData(request)
+        return try JSONDecoder().decode(T.self, from: data)
+    }
+
+    func makeRequest(path: String, method: String, body: Data?, headers: [String: String]) throws -> URLRequest {
+        var urlComps = URLComponents()
+        urlComps.scheme = "https"
+        urlComps.host = "test.example.com"
+        urlComps.path = path
+        var request = URLRequest(url: urlComps.url!)
+        request.httpMethod = method
+        request.httpBody = body
+        for (k, v) in headers { request.setValue(v, forHTTPHeaderField: k) }
+        return request
+    }
+}
+
+/// BackendAuthProvider double for WoLService tests.
+private final class WoLMockAuthProvider: BackendAuthProvider, Sendable {
+    var token: String? = "test-token-123"
+    var shouldFail = false
+
+    func bearerToken() throws -> String? {
+        if shouldFail { throw NetworkError.unauthorized }
+        return token
+    }
+}
+
+/// BackendConfig double for WoLService tests.
+private func makeConfig(configured: Bool = true) -> BackendConfig {
+    BackendConfig(
+        baseURL: configured ? URL(string: "https://test.example.com") : nil,
+        websocketURL: nil,
+        requestTimeout: 30
+    )
+}
+
+/// WoLService unit tests. No network — all HTTP goes through a mock client.
+@MainActor
+final class WoLServiceTests: XCTestCase {
+
+    private var api: WoLMockAPIClient!
+    private var auth: WoLMockAuthProvider!
+    private var service: WoLService!
+
+    override func setUp() {
+        super.setUp()
+        api = WoLMockAPIClient()
+        auth = WoLMockAuthProvider()
+        service = WoLService(
+            api: api,
+            auth: auth,
+            configProvider: { makeConfig(configured: true) }
+        )
+    }
+
+    override func tearDown() {
+        api = nil
+        auth = nil
+        service = nil
+        super.tearDown()
+    }
+
+    // MARK: - configure
+
+    func testConfigureSendsMACToHub() async throws {
+        try await service.configure(mac: "AA:BB:CC:DD:EE:FF", broadcast: "255.255.255.255")
+
+        guard let request = api.capturedRequest else {
+            XCTFail("No request was made")
+            return
+        }
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(request.url?.path, "/api/wol/config")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-token-123")
+
+        let body = try JSONDecoder().decode([String: String].self, from: api.capturedRequest!.httpBody ?? Data())
+        XCTAssertEqual(body["mac"], "AA:BB:CC:DD:EE:FF")
+        XCTAssertEqual(body["broadcastAddress"], "255.255.255.255")
+        XCTAssertEqual(service.lastStatus, "Configured (HTTP 200)")
+        XCTAssertNil(service.lastError)
+    }
+
+    func testConfigureRejectsUnconfiguredBackend() async {
+        service = WoLService(
+            api: api,
+            auth: auth,
+            configProvider: { makeConfig(configured: false) }
+        )
+        do {
+            try await service.configure(mac: "AA:BB:CC:DD:EE:FF")
+            XCTFail("Expected transport error for unconfigured backend")
+        } catch let e as NetworkError {
+            XCTAssertTrue(e.localizedDescription.contains("Backend not configured"))
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
+        }
+    }
+
+    func testConfigureRejectsMissingAuth() async {
+        auth.shouldFail = true
+        do {
+            try await service.configure(mac: "AA:BB:CC:DD:EE:FF")
+            XCTFail("Expected unauthorized error")
+        } catch let e as NetworkError {
+            XCTAssertEqual(e, .unauthorized)
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
+        }
+    }
+
+    func testConfigurePropagatesTransportError() async {
+        api.shouldFail = true
+        api.failError = .timeout
+        do {
+            try await service.configure(mac: "AA:BB:CC:DD:EE:FF")
+            XCTFail("Expected timeout error")
+        } catch let e as NetworkError {
+            XCTAssertEqual(e, .timeout)
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
+        }
+    }
+
+    // MARK: - wake
+
+    func testWakeSendsMagicPacket() async throws {
+        try await service.wake()
+
+        guard let request = api.capturedRequest else {
+            XCTFail("No request was made")
+            return
+        }
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(request.url?.path, "/api/wol/wake")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-token-123")
+        XCTAssertEqual(service.lastStatus, "Magic packet sent (HTTP 200)")
+        XCTAssertNil(service.lastError)
+    }
+
+    func testWakeRejectsUnconfiguredBackend() async {
+        service = WoLService(
+            api: api,
+            auth: auth,
+            configProvider: { makeConfig(configured: false) }
+        )
+        do {
+            try await service.wake()
+            XCTFail("Expected transport error for unconfigured backend")
+        } catch let e as NetworkError {
+            XCTAssertTrue(e.localizedDescription.contains("Backend not configured"))
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
+        }
+    }
+
+    func testWakePropagatesTransportError() async {
+        api.shouldFail = true
+        api.failError = .noConnection
+        do {
+            try await service.wake()
+            XCTFail("Expected noConnection error")
+        } catch let e as NetworkError {
+            XCTAssertEqual(e, .noConnection)
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
+        }
+    }
+
+    func testResetDiagnostics() {
+        service.lastStatus = "some status"
+        service.lastError = .timeout
+        service.resetDiagnostics()
+        XCTAssertNil(service.lastStatus)
+        XCTAssertNil(service.lastError)
+    }
+}

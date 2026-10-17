@@ -128,6 +128,18 @@ public final class SettingsStore: ObservableObject {
         didSet { defaults.set(deviceId, forKey: Keys.deviceId) }
     }
 
+    /// Office desktop/laptop MAC address for Wake-on-LAN (AA:BB:CC:DD:EE:FF).
+    /// Stored locally; also pushed to the hub via /api/wol/config.
+    @Published public var wolMACAddress: String {
+        didSet { defaults.set(wolMACAddress, forKey: Keys.wolMAC) }
+    }
+
+    /// WoL broadcast address (default 255.255.255.255; can be subnet-specific
+    /// like 192.168.1.255 for managed office networks).
+    @Published public var wolBroadcastAddress: String {
+        didSet { defaults.set(wolBroadcastAddress, forKey: Keys.wolBroadcast) }
+    }
+
     /// The UserDefaults instance mutations persist to (`.standard` by
     /// default; isolated suites in tests).
     private let defaults: UserDefaults
@@ -157,6 +169,8 @@ public final class SettingsStore: ObservableObject {
         static let reduceMotion = "zyraxis.settings.reduceMotion"
         static let romanticMode = "zyraxis.settings.romanticMode"
         static let deviceId = "zyraxis.settings.deviceId"
+        static let wolMAC = "zyraxis.settings.wolMAC"
+        static let wolBroadcast = "zyraxis.settings.wolBroadcast"
     }
 
     public init(defaults: UserDefaults = .standard) {
@@ -202,6 +216,8 @@ public final class SettingsStore: ObservableObject {
             d.set(fresh, forKey: Keys.deviceId)
             self.deviceId = fresh
         }
+        self.wolMACAddress = d.string(forKey: Keys.wolMAC) ?? ""
+        self.wolBroadcastAddress = d.string(forKey: Keys.wolBroadcast) ?? "255.255.255.255"
     }
 
     /// Validated snapshot for the networking layer. The active HTTP base
@@ -263,5 +279,7 @@ public final class SettingsStore: ObservableObject {
         reduceMotion = false
         romanticMode = false
         deviceId = UUID().uuidString
+        wolMACAddress = ""
+        wolBroadcastAddress = "255.255.255.255"
     }
 }
