@@ -15,6 +15,7 @@ public struct SettingsView: View {
     @State private var keychainStatus: String = ""
     @State private var showingResetConfirm = false
     @State private var deviceSnapshot = DeviceInfoProvider.collect()
+    @State private var wolNameInput: String = ""
     @State private var wolMACInput: String = ""
     @State private var wolBroadcastInput: String = ""
     @State private var wolStatus: String = ""
@@ -99,8 +100,6 @@ public struct SettingsView: View {
             }
             .onAppear {
                 loadKeychainStatus()
-                wolMACInput = deps.settings.wolMACAddress
-                wolBroadcastInput = deps.settings.wolBroadcastAddress
                 remoteDesktopSessionKey = deps.settings.remoteDesktopSessionKey
             }
             .onChange(of: deps.settings.selectedProvider) { _, _ in
@@ -337,7 +336,46 @@ public struct SettingsView: View {
     // MARK: - Wake-on-LAN
 
     private var wolSection: some View {
-        Section("Wake-on-LAN (Office PC)") {
+        Section("Wake-on-LAN (PCs)") {
+            ForEach(deps.settings.wolProfiles) { profile in
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(profile.name)
+                        Spacer()
+                        Button("Power On") {
+                            Task {
+                                await powerOn(profile)
+                            }
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                    Text("MAC \(profile.mac)")
+                        .font(ZyraxisTheme.tech(12))
+                        .foregroundStyle(.secondary)
+                    if profile.broadcast != "255.255.255.255" {
+                        Text("Broadcast \(profile.broadcast)")
+                            .font(ZyraxisTheme.tech(11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        Task {
+                            await deleteProfile(profile)
+                        }
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
+            }
+
+            HStack {
+                Text("Name")
+                Spacer()
+                TextField("Home PC", text: $wolNameInput)
+                    .multilineTextAlignment(.trailing)
+                    .font(ZyraxisTheme.tech(12))
+            }
             HStack {
                 Text("MAC")
                 Spacer()
@@ -357,17 +395,12 @@ public struct SettingsView: View {
                     .font(ZyraxisTheme.tech(12))
             }
             HStack {
-                Button("Save MAC") {
+                Button("Add PC") {
                     Task {
                         await saveWoLConfig()
                     }
                 }
-                Button("Power On") {
-                    Task {
-                        await powerOn()
-                    }
-                }
-                .disabled(deps.settings.wolMACAddress.isEmpty)
+                .disabled(wolMACInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 Spacer()
                 if !wolStatus.isEmpty {
                     Text(wolStatus)
@@ -376,7 +409,7 @@ public struct SettingsView: View {
                 }
             }
             .buttonStyle(.borderless)
-            Text("Office desktop MAC (from `ipconfig` on the LAN PC). Power On sends a magic packet via your hub — WoL must be enabled in BIOS + Windows adapter settings, and the PC must be on AC power.")
+            Text("Add each PC with a name (Home PC, Office PC, School PC...) and its MAC from `ipconfig /all`. Power On sends a magic packet via your hub — WoL must be enabled in BIOS + the Windows adapter, and the PC must be on AC power. Swipe a PC left to remove it.")
                 .font(ZyraxisTheme.caption())
                 .foregroundStyle(.secondary)
         }
@@ -511,28 +544,41 @@ public struct SettingsView: View {
     // MARK: - WoL helpers
 
     private func saveWoLConfig() async {
+        let name = wolNameInput.trimmingCharacters(in: .whitespacesAndNewlines)
         let mac = wolMACInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        let broadcast = wolBroadcastInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? "255.255.255.255" : wolBroadcastInput
-        do {
-            try await deps.wolService.configure(mac: mac, broadcast: broadcast)
-            deps.settings.wolMACAddress = mac
-            deps.settings.wolBroadcastAddress = broadcast
-            wolStatus = "MAC saved to hub."
-            wolMACInput = ""
-            wolBroadcastInput = ""
-        } catch {
-            wolStatus = "Save failed: \(error.localizedDescription)"
+        var broadcast = wolBroadcastInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        if broadcast.isEmpty { broadcast = "255.255.255.255" }
+        guard !mac.isEmpty else {
+            wolStatus = "Enter a MAC address."
+            return
         }
+        let resolvedName = name.isEmpty ? "PC \(deps.settings.wolProfiles.count + 1)" : name
+        let profile = WoLProfile(name: resolvedName, mac: mac, broadcast: broadcast)
+        deps.settings.upsertWoLProfile(profile)
+        do {
+            try await deps.wolService.configure(profile)
+            wolStatus = "\(resolvedName) saved to hub."
+        } catch {
+            wolStatus = "\(resolvedName) saved on phone (hub: \(error.localizedDescription))"
+        }
+        wolNameInput = ""
+        wolMACInput = ""
+        wolBroadcastInput = ""
     }
 
-    private func powerOn() async {
+    private func powerOn(_ profile: WoLProfile) async {
         do {
-            try await deps.wolService.wake()
+            try await deps.wolService.wake(profile)
             wolStatus = deps.wolService.lastStatus ?? "Magic packet sent."
         } catch {
             wolStatus = "Wake failed: \(error.localizedDescription)"
         }
+    }
+
+    private func deleteProfile(_ profile: WoLProfile) async {
+        deps.settings.removeWoLProfile(named: profile.name)
+        try? await deps.wolService.removeProfile(named: profile.name)
+        wolStatus = "\(profile.name) removed."
     }
 }
 

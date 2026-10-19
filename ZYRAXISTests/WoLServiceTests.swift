@@ -200,4 +200,69 @@ final class WoLServiceTests: XCTestCase {
         XCTAssertNil(service.lastStatus)
         XCTAssertNil(service.lastError)
     }
+
+    // MARK: - Named profiles (multi-PC)
+
+    func testConfigureNamedProfileSendsNameAndBroadcast() async throws {
+        try await service.configure(
+            name: "Office PC",
+            mac: "AA:BB:CC:DD:EE:02",
+            broadcast: "192.168.1.255"
+        )
+
+        let body = try JSONSerialization.jsonObject(
+            with: api.capturedRequest?.httpBody ?? Data()
+        ) as? [String: Any]
+        XCTAssertEqual(body?["name"] as? String, "Office PC")
+        XCTAssertEqual(body?["mac"] as? String, "AA:BB:CC:DD:EE:02")
+        XCTAssertEqual(body?["broadcastAddress"] as? String, "192.168.1.255")
+        XCTAssertEqual(api.capturedRequest?.url?.path, "/api/v1/wol/config")
+    }
+
+    func testConfigureProfileUsesProfileName() async throws {
+        let profile = WoLProfile(name: "School PC", mac: "AA:BB:CC:DD:EE:03")
+        try await service.configure(profile)
+
+        let body = try JSONSerialization.jsonObject(
+            with: api.capturedRequest?.httpBody ?? Data()
+        ) as? [String: Any]
+        XCTAssertEqual(body?["name"] as? String, "School PC")
+        XCTAssertEqual(body?["broadcastAddress"] as? String, "255.255.255.255")
+    }
+
+    func testWakeNamedProfileSendsName() async throws {
+        try await service.wake(name: "Office PC")
+
+        XCTAssertEqual(api.capturedRequest?.httpMethod, "POST")
+        XCTAssertEqual(api.capturedRequest?.url?.path, "/api/v1/wol/wake")
+        XCTAssertEqual(api.capturedRequest?.value(forHTTPHeaderField: "Authorization"), "Bearer test-token-123")
+
+        let body = try JSONSerialization.jsonObject(
+            with: api.capturedRequest?.httpBody ?? Data()
+        ) as? [String: Any]
+        XCTAssertEqual(body?["name"] as? String, "Office PC")
+    }
+
+    func testRemoveProfileUsesDelete() async throws {
+        try await service.removeProfile(named: "OfficePC")
+
+        XCTAssertEqual(api.capturedRequest?.httpMethod, "DELETE")
+        XCTAssertEqual(api.capturedRequest?.url?.path, "/api/v1/wol/config/OfficePC")
+        XCTAssertEqual(api.capturedRequest?.value(forHTTPHeaderField: "Authorization"), "Bearer test-token-123")
+    }
+
+    func testWakeProfileConfiguresThenWakes() async throws {
+        let profile = WoLProfile(name: "HomePC", mac: "AA:BB:CC:DD:EE:01", broadcast: "192.168.1.255")
+        try await service.wake(profile)
+
+        // The last request must be the wake call, not the configure upsert.
+        XCTAssertEqual(api.capturedRequest?.url?.path, "/api/v1/wol/wake")
+        XCTAssertEqual(service.lastStatus, "Magic packet sent (HTTP 200)")
+    }
+
+    func testEncodePathSegmentEscapesSpaces() {
+        XCTAssertEqual(WoLService.encodePathSegment("Home PC"), "Home%20PC")
+        XCTAssertEqual(WoLService.encodePathSegment("OfficePC"), "OfficePC")
+        XCTAssertEqual(WoLService.encodePathSegment("School-PC_2"), "School-PC_2")
+    }
 }

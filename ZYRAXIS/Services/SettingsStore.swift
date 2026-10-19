@@ -128,16 +128,11 @@ public final class SettingsStore: ObservableObject {
         didSet { defaults.set(deviceId, forKey: Keys.deviceId) }
     }
 
-    /// Office desktop/laptop MAC address for Wake-on-LAN (AA:BB:CC:DD:EE:FF).
-    /// Stored locally; also pushed to the hub via /api/wol/config.
-    @Published public var wolMACAddress: String {
-        didSet { defaults.set(wolMACAddress, forKey: Keys.wolMAC) }
-    }
-
-    /// WoL broadcast address (default 255.255.255.255; can be subnet-specific
-    /// like 192.168.1.255 for managed office networks).
-    @Published public var wolBroadcastAddress: String {
-        didSet { defaults.set(wolBroadcastAddress, forKey: Keys.wolBroadcast) }
+    /// Named Wake-on-LAN targets ("Home PC", "Office PC", "School PC", ...).
+    /// Stored locally as JSON; each is also pushed to the hub via
+    /// `/api/wol/config` when it is saved or woken.
+    @Published public var wolProfiles: [WoLProfile] {
+        didSet { persistWoLProfiles() }
     }
 
     @Published public var remoteDesktopSessionKey: String {
@@ -173,6 +168,8 @@ public final class SettingsStore: ObservableObject {
         static let reduceMotion = "zyraxis.settings.reduceMotion"
         static let romanticMode = "zyraxis.settings.romanticMode"
         static let deviceId = "zyraxis.settings.deviceId"
+        static let wolProfiles = "zyraxis.settings.wolProfiles"
+        // Legacy single-target keys — read once to migrate into `wolProfiles`.
         static let wolMAC = "zyraxis.settings.wolMAC"
         static let wolBroadcast = "zyraxis.settings.wolBroadcast"
         static let remoteDesktopSessionKey = "zyraxis.settings.remoteDesktopSessionKey"
@@ -221,8 +218,18 @@ public final class SettingsStore: ObservableObject {
             d.set(fresh, forKey: Keys.deviceId)
             self.deviceId = fresh
         }
-        self.wolMACAddress = d.string(forKey: Keys.wolMAC) ?? ""
-        self.wolBroadcastAddress = d.string(forKey: Keys.wolBroadcast) ?? "255.255.255.255"
+        if let data = d.data(forKey: Keys.wolProfiles),
+           let saved = try? JSONDecoder().decode([WoLProfile].self, from: data) {
+            self.wolProfiles = saved
+        } else if let legacyMAC = d.string(forKey: Keys.wolMAC), !legacyMAC.isEmpty {
+            // One-time migration of the pre-multi-PC single MAC setting.
+            let legacyBroadcast = d.string(forKey: Keys.wolBroadcast) ?? "255.255.255.255"
+            self.wolProfiles = [
+                WoLProfile(name: "Saved PC", mac: legacyMAC, broadcast: legacyBroadcast)
+            ]
+        } else {
+            self.wolProfiles = []
+        }
         self.remoteDesktopSessionKey = d.string(forKey: Keys.remoteDesktopSessionKey) ?? ""
     }
 
@@ -285,8 +292,30 @@ public final class SettingsStore: ObservableObject {
         reduceMotion = false
         romanticMode = false
         deviceId = UUID().uuidString
-        wolMACAddress = ""
-        wolBroadcastAddress = "255.255.255.255"
+        wolProfiles = []
         remoteDesktopSessionKey = ""
+    }
+
+    // MARK: - Wake-on-LAN profiles
+
+    /// Adds a profile, or replaces the existing one with the same name.
+    public func upsertWoLProfile(_ profile: WoLProfile) {
+        var list = wolProfiles
+        if let index = list.firstIndex(where: { $0.name == profile.name }) {
+            list[index] = profile
+        } else {
+            list.append(profile)
+        }
+        wolProfiles = list
+    }
+
+    /// Removes the profile with the given name.
+    public func removeWoLProfile(named name: String) {
+        wolProfiles.removeAll { $0.name == name }
+    }
+
+    private func persistWoLProfiles() {
+        guard let data = try? JSONEncoder().encode(wolProfiles) else { return }
+        defaults.set(data, forKey: Keys.wolProfiles)
     }
 }
