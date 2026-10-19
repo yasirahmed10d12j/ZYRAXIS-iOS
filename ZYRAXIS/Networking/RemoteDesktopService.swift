@@ -70,6 +70,7 @@ public final class RemoteDesktopService: ObservableObject {
     private let configProvider: () -> BackendConfig
     private let webSocket: URLSessionWebSocketManager
     private var cancellables = Set<AnyCancellable>()
+    private var keepaliveTask: Task<Void, Never>?
 
     public init(
         api: any APIClient,
@@ -144,9 +145,34 @@ public final class RemoteDesktopService: ObservableObject {
         }
 
         state = .connected(sessionKey: sessionKey)
+        startKeepalive(sessionKey: sessionKey)
+    }
+
+    // The laptop only streams while a phone is actually watching: it stops
+    // capturing when no input arrives for ~25s, and this ping keeps it alive
+    // while the viewer is open (and stops by itself when iOS suspends us).
+    private func startKeepalive(sessionKey: String) {
+        keepaliveTask?.cancel()
+        keepaliveTask = Task { [weak self] in
+            // Ping first (marks the phone as "watching" immediately so the
+            // desktop starts streaming without a 10s wait), then every 10s.
+            while !Task.isCancelled {
+                guard let self, case .connected(let key) = self.state, key == sessionKey else { return }
+                // No position/scroll => the desktop treats it as a no-op ping.
+                try? await self.sendInput(RemoteInputEvent(sessionKey: sessionKey, kind: .mouse))
+                if Task.isCancelled { return }
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
+            }
+        }
+    }
+
+    private func stopKeepalive() {
+        keepaliveTask?.cancel()
+        keepaliveTask = nil
     }
 
     public func disconnect() {
+        stopKeepalive()
         webSocket.disconnect()
         state = .disconnected
         currentFrame = nil
@@ -157,6 +183,7 @@ public final class RemoteDesktopService: ObservableObject {
     /// must not kill everything else. Stale frames are dropped by the
     /// `.connected` guard in handleIncoming.
     public func endSession() {
+        stopKeepalive()
         state = .disconnected
         currentFrame = nil
     }
