@@ -17,6 +17,7 @@ public final class RemoteDesktopViewController: UIViewController {
     private var cancellables = Set<AnyCancellable>()
     private let keyboardField = UITextField()
     private let statusLabel = UILabel()
+    private let touchMarker = UIView()
     private var scrollAccum: CGFloat = 0
     private var lastMoveSent: TimeInterval = 0
 
@@ -100,6 +101,17 @@ public final class RemoteDesktopViewController: UIViewController {
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         view.addGestureRecognizer(tap)
 
+        // The remote frames don't include the mouse cursor, so show a local
+        // marker where the finger touched (that IS where the cursor moved to).
+        touchMarker.bounds = CGRect(x: 0, y: 0, width: 34, height: 34)
+        touchMarker.layer.cornerRadius = 17
+        touchMarker.backgroundColor = UIColor.white.withAlphaComponent(0.25)
+        touchMarker.layer.borderColor = UIColor.white.withAlphaComponent(0.9).cgColor
+        touchMarker.layer.borderWidth = 1.5
+        touchMarker.isUserInteractionEnabled = false
+        touchMarker.isHidden = true
+        view.addSubview(touchMarker)
+
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.delaysTouchesBegan = false
         view.addGestureRecognizer(pan)
@@ -178,6 +190,7 @@ public final class RemoteDesktopViewController: UIViewController {
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
         guard gesture.state == .ended, imageView.image != nil else { return }
         let point = gesture.location(in: view)
+        showMarker(at: point)
         Task {
             do {
                 try await service.sendInput(RemoteInputEvent(
@@ -199,14 +212,30 @@ public final class RemoteDesktopViewController: UIViewController {
         let point = gesture.location(in: view)
         switch gesture.state {
         case .began:
+            showMarker(at: point)
             sendMouseMove(to: point, down: true)
         case .changed:
+            showMarker(at: point)
             // Drag moves fire at display refresh rate — throttle to ~12/s.
             sendMouseMove(to: point, down: true, throttle: true)
         case .ended, .cancelled:
+            showMarker(at: point)
             sendMouseMove(to: point, down: false)
         default:
             break
+        }
+    }
+
+    /// Brief ring at the touch point — the streamed frames have no cursor.
+    private func showMarker(at point: CGPoint) {
+        touchMarker.center = point
+        touchMarker.isHidden = false
+        touchMarker.layer.removeAllAnimations()
+        touchMarker.alpha = 1
+        UIView.animate(withDuration: 0.7, delay: 0.3, options: [.allowUserInteraction]) {
+            self.touchMarker.alpha = 0
+        } completion: { _ in
+            self.touchMarker.isHidden = true
         }
     }
 
