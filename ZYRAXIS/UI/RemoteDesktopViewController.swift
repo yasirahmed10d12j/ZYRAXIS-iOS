@@ -16,6 +16,10 @@ public final class RemoteDesktopViewController: UIViewController {
     private let imageView = UIImageView()
     private var cancellables = Set<AnyCancellable>()
     private let keyboardField = UITextField()
+    /// Always sits in the hidden field so backspace always has something to
+    /// delete — UIKit does NOT call the delegate when you press delete on an
+    /// empty text field, and every change is rejected (the PC owns the text).
+    private let keyboardSentinel = "\u{200B}"
     private let statusLabel = UILabel()
     private let touchMarker = UIView()
     private var scrollAccum: CGFloat = 0
@@ -152,6 +156,7 @@ public final class RemoteDesktopViewController: UIViewController {
         keyboardField.smartInsertDeleteType = .no
         keyboardField.frame = CGRect(x: 0, y: 0, width: 1, height: 1)
         keyboardField.alpha = 0.02
+        keyboardField.text = keyboardSentinel
         view.addSubview(keyboardField)
 
         let bar = UIToolbar()
@@ -318,13 +323,14 @@ extension RemoteDesktopViewController: UITextFieldDelegate {
                           shouldChangeCharactersIn range: NSRange,
                           replacementString string: String) -> Bool {
         if string.isEmpty {
-            // Backspace / delete: replacement string is empty.
-            guard range.length > 0 else { return false }
-            sendKey("backspace")
-            return false
+            // Backspace / delete (possible because of the sentinel).
+            if range.length > 0 { sendKey("backspace") }
+        } else {
+            sendKey(string)
         }
-        sendKey(string)
-        return false // the remote machine owns the text, never this hidden field
+        // The remote machine owns the text, never this hidden field.
+        if textField.text != keyboardSentinel { textField.text = keyboardSentinel }
+        return false
     }
 
     public func textFieldShouldReturn(_ textField: UITextField) -> Bool {
