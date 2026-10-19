@@ -17,6 +17,8 @@ public struct RemoteInputEvent: Codable, Sendable {
         case mouse    = "mouse"
     }
 
+    /// Hub protocol version — the relay rejects frames without it.
+    public let version: Int
     public let type: String
     public let requestId: String
     public let payload: Payload
@@ -31,17 +33,22 @@ public struct RemoteInputEvent: Codable, Sendable {
         public let doubleClick: Bool?
         public let scrollX: Int?
         public let scrollY: Int?
+        /// Drag state: true = button held (drag), false = release.
+        /// nil = plain tap / move.
+        public let down: Bool?
     }
 
     public init(sessionKey: String, kind: Kind, key: String? = nil,
                 x: Int? = nil, y: Int? = nil, button: String? = nil,
-                doubleClick: Bool? = nil, scrollX: Int? = nil, scrollY: Int? = nil) {
+                doubleClick: Bool? = nil, scrollX: Int? = nil, scrollY: Int? = nil,
+                down: Bool? = nil) {
+        self.version = 1
         self.type = "remote-desktop-input"
         self.requestId = UUID().uuidString
         self.payload = Payload(sessionKey: sessionKey, kind: kind, key: key,
                                x: x, y: y, button: button,
                                doubleClick: doubleClick,
-                               scrollX: scrollX, scrollY: scrollY)
+                               scrollX: scrollX, scrollY: scrollY, down: down)
     }
 }
 
@@ -117,11 +124,23 @@ public final class RemoteDesktopService: ObservableObject {
             state = .error("Failed to encode announce frame")
             throw NetworkError.transport("Failed to encode announce frame")
         }
-        do {
-            try await webSocket.send(text: text)
-        } catch {
-            state = .error("Failed to send announce: \(error.localizedDescription)")
-            throw error
+        // The shared socket may still be opening (or reconnecting); this
+        // announce is what registers the phone on the hub, so retry briefly
+        // instead of failing the first frame.
+        var lastError: Error?
+        for _ in 0..<20 {
+            do {
+                try await webSocket.send(text: text)
+                lastError = nil
+                break
+            } catch {
+                lastError = error
+                try? await Task.sleep(nanoseconds: 150_000_000)
+            }
+        }
+        if let lastError {
+            state = .error("Failed to send announce: \(lastError.localizedDescription)")
+            throw lastError
         }
 
         state = .connected(sessionKey: sessionKey)
@@ -129,6 +148,15 @@ public final class RemoteDesktopService: ObservableObject {
 
     public func disconnect() {
         webSocket.disconnect()
+        state = .disconnected
+        currentFrame = nil
+    }
+
+    /// Leave the remote desktop session WITHOUT tearing down the socket —
+    /// the app shares that socket with chat/voice, so closing the viewer
+    /// must not kill everything else. Stale frames are dropped by the
+    /// `.connected` guard in handleIncoming.
+    public func endSession() {
         state = .disconnected
         currentFrame = nil
     }

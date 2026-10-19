@@ -427,7 +427,9 @@ public struct SettingsView: View {
                     .font(ZyraxisTheme.tech(12))
             }
             Button {
-                deps.settings.remoteDesktopSessionKey = remoteDesktopSessionKey
+                let trimmed = remoteDesktopSessionKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                remoteDesktopSessionKey = trimmed
+                deps.settings.remoteDesktopSessionKey = trimmed
                 presentRemoteDesktop = true
             } label: {
                 HStack {
@@ -438,7 +440,7 @@ public struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .disabled(deps.settings.remoteDesktopSessionKey.isEmpty)
+            .disabled(remoteDesktopSessionKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
             Text("Desktop must be running ZYRAXIS server with remote desktop enabled. Get session key from desktop app.")
                 .font(ZyraxisTheme.caption())
