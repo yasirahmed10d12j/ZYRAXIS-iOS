@@ -32,31 +32,31 @@ public final class SettingsStore: ObservableObject {
     }
 
     @Published public var backendBaseURLString: String {
-        didSet { defaults.set(backendBaseURLString, forKey: Keys.backendURL) }
+        didSet { defaults.set(backendBaseURLString, forKey: Keys.backendURL); invalidateBackendConfig() }
     }
     @Published public var websocketURLString: String {
-        didSet { defaults.set(websocketURLString, forKey: Keys.wsURL) }
+        didSet { defaults.set(websocketURLString, forKey: Keys.wsURL); invalidateBackendConfig() }
     }
     @Published public var requestTimeout: Double {
-        didSet { defaults.set(requestTimeout, forKey: Keys.timeout) }
+        didSet { defaults.set(requestTimeout, forKey: Keys.timeout); invalidateBackendConfig() }
     }
     @Published public var connectionTimeout: Double {
-        didSet { defaults.set(connectionTimeout, forKey: Keys.connectionTimeout) }
+        didSet { defaults.set(connectionTimeout, forKey: Keys.connectionTimeout); invalidateBackendConfig() }
     }
     @Published public var environment: BackendEnvironment {
-        didSet { defaults.set(environment.rawValue, forKey: Keys.environment) }
+        didSet { defaults.set(environment.rawValue, forKey: Keys.environment); invalidateBackendConfig() }
     }
     @Published public var devBaseURLString: String {
-        didSet { defaults.set(devBaseURLString, forKey: Keys.devBackendURL) }
+        didSet { defaults.set(devBaseURLString, forKey: Keys.devBackendURL); invalidateBackendConfig() }
     }
     @Published public var devWebSocketURLString: String {
-        didSet { defaults.set(devWebSocketURLString, forKey: Keys.devWSURL) }
+        didSet { defaults.set(devWebSocketURLString, forKey: Keys.devWSURL); invalidateBackendConfig() }
     }
     @Published public var stagingBaseURLString: String {
-        didSet { defaults.set(stagingBaseURLString, forKey: Keys.stagingBackendURL) }
+        didSet { defaults.set(stagingBaseURLString, forKey: Keys.stagingBackendURL); invalidateBackendConfig() }
     }
     @Published public var stagingWebSocketURLString: String {
-        didSet { defaults.set(stagingWebSocketURLString, forKey: Keys.stagingWSURL) }
+        didSet { defaults.set(stagingWebSocketURLString, forKey: Keys.stagingWSURL); invalidateBackendConfig() }
     }
     @Published public var selectedProvider: AIProvider {
         didSet {
@@ -236,7 +236,22 @@ public final class SettingsStore: ObservableObject {
     /// Validated snapshot for the networking layer. The active HTTP base
     /// resolves from `environment`, falling back to production when the
     /// selected environment's URLs are unset.
+    ///
+    /// Cached: the body of `SettingsView` reads this several times per render
+    /// and each call used to re-parse six URL strings. The cache is rebuilt
+    /// whenever any input changes (see `invalidateBackendConfig`).
     public var backendConfig: BackendConfig {
+        if let cached = cachedBackendConfig { return cached }
+        let built = buildBackendConfig()
+        cachedBackendConfig = built
+        return built
+    }
+
+    private var cachedBackendConfig: BackendConfig?
+
+    private func invalidateBackendConfig() { cachedBackendConfig = nil }
+
+    private func buildBackendConfig() -> BackendConfig {
         let prodBase = BackendConfig.parseBaseURL(backendBaseURLString)
         let devBase = BackendConfig.parseBaseURL(devBaseURLString)
         let stagingBase = BackendConfig.parseBaseURL(stagingBaseURLString)
@@ -268,6 +283,7 @@ public final class SettingsStore: ObservableObject {
     }
 
     public func resetToDefaults() {
+        invalidateBackendConfig()
         backendBaseURLString = ""
         websocketURLString = ""
         requestTimeout = 30

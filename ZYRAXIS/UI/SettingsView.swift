@@ -1,15 +1,38 @@
 import SwiftUI
 import AVFoundation
 
+/// Local, non-persisted mirror of the six URL fields. Lives at file scope so
+/// `@State` initialization stays nonisolated (the view itself is `@MainActor`).
+struct SettingsURLDraft: Equatable {
+    var backend = ""
+    var websocket = ""
+    var devBackend = ""
+    var devWebsocket = ""
+    var stagingBackend = ""
+    var stagingWebsocket = ""
+}
+
 /// Settings screen: placeholders + real controls.
 ///
 /// Real: backend URL editing, timeout, provider picker (mock/backend/direct),
 /// voice/notification/memory toggles, appearance, API-key keychain field,
 /// reset. Everything else is an honest placeholder for later phases.
+///
+/// Explicitly `@MainActor`: `AppDependencies`/`SettingsStore` are MainActor
+/// isolated, so the initializer must be too (same reason as `ZYRAXISApp`).
+@MainActor
 public struct SettingsView: View {
 
-    @EnvironmentObject private var deps: AppDependencies
+    /// Held as a plain reference, not `@EnvironmentObject`: `AppDependencies`
+    /// re-publishes for websocket/voice/conversation churn, and observing it
+    /// here re-rendered the whole 12-section Form constantly (the "settings
+    /// screen freezes" bug). This screen only needs to re-render for its own
+    /// `@State` and for `settings`, which is observed directly below.
+    private let depsRef: AppDependencies
+    @ObservedObject private var settings: SettingsStore
     @Environment(\.dismiss) private var dismiss
+
+    private var deps: AppDependencies { depsRef }
 
     @State private var apiKeyInput: String = ""
     @State private var keychainStatus: String = ""
@@ -22,7 +45,17 @@ public struct SettingsView: View {
     @State private var remoteDesktopSessionKey: String = ""
     @State private var presentRemoteDesktop = false
 
-    public init() {}
+    // Text-field drafts. Typing must never write to the store on every
+    // keystroke: a store write re-renders this whole Form (12 sections) and
+    // re-parses backendConfig, which is what made URL entry feel frozen.
+    // Drafts update instantly; the store is updated once, debounced.
+    @State private var urlDraft = SettingsURLDraft()
+    @State private var commitTask: Task<Void, Never>?
+
+    public init(dependencies: AppDependencies) {
+        self.depsRef = dependencies
+        self._settings = ObservedObject(wrappedValue: dependencies.settings)
+    }
 
     // MARK: - Provider-aware API key
 
@@ -59,6 +92,30 @@ public struct SettingsView: View {
         )
     }
 
+    /// Binding for a URL text field, backed by local `@State` so keystrokes
+    /// never touch the store. The store is written once, 0.4 s after typing
+    /// stops — that single write is what re-parses `backendConfig` and
+    /// reconnects, so doing it per character froze the whole screen.
+    private func draft(
+        _ keyPath: WritableKeyPath<SettingsURLDraft, String>,
+        store get: @escaping (SettingsStore) -> String,
+        set: @escaping (SettingsStore, String) -> Void
+    ) -> Binding<String> {
+        Binding(
+            get: { urlDraft[keyPath: keyPath] },
+            set: { newValue in
+                urlDraft[keyPath: keyPath] = newValue
+                let value = newValue
+                commitTask?.cancel()
+                commitTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 400_000_000)
+                    guard !Task.isCancelled else { return }
+                    if get(deps.settings) != value { set(deps.settings, value) }
+                }
+            }
+        )
+    }
+
     public var body: some View {
         NavigationStack {
             ZStack {
@@ -85,9 +142,13 @@ public struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        flushURLDrafts()
+                        dismiss()
+                    }
                 }
             }
+            .onDisappear { flushURLDrafts() }
             .sheet(isPresented: $presentRemoteDesktop) {
                 NavigationView {
                     RemoteDesktopVCRepresentable(
@@ -101,6 +162,7 @@ public struct SettingsView: View {
             .onAppear {
                 loadKeychainStatus()
                 remoteDesktopSessionKey = deps.settings.remoteDesktopSessionKey
+                seedURLDrafts()
             }
             .onChange(of: deps.settings.selectedProvider) { _, _ in
                 apiKeyInput = ""
@@ -129,22 +191,22 @@ public struct SettingsView: View {
                     Text(e.displayName).tag(e)
                 }
             }
-            TextField("Backend base URL (https://…)", text: binding(get: { $0.backendBaseURLString }, set: { $0.backendBaseURLString = $1 }))
+            TextField("Backend base URL (https://…)", text: draft(\.backend, store: { $0.backendBaseURLString }, set: { $0.backendBaseURLString = $1 }))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-            TextField("Dev backend URL (https://…)", text: binding(get: { $0.devBaseURLString }, set: { $0.devBaseURLString = $1 }))
+            TextField("Dev backend URL (https://…)", text: draft(\.devBackend, store: { $0.devBaseURLString }, set: { $0.devBaseURLString = $1 }))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-            TextField("WebSocket URL (wss://…)", text: binding(get: { $0.websocketURLString }, set: { $0.websocketURLString = $1 }))
+            TextField("WebSocket URL (wss://…)", text: draft(\.websocket, store: { $0.websocketURLString }, set: { $0.websocketURLString = $1 }))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-            TextField("Dev WebSocket URL (wss://…)", text: binding(get: { $0.devWebSocketURLString }, set: { $0.devWebSocketURLString = $1 }))
+            TextField("Dev WebSocket URL (wss://…)", text: draft(\.devWebsocket, store: { $0.devWebSocketURLString }, set: { $0.devWebSocketURLString = $1 }))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-            TextField("Staging backend URL (https://…)", text: binding(get: { $0.stagingBaseURLString }, set: { $0.stagingBaseURLString = $1 }))
+            TextField("Staging backend URL (https://…)", text: draft(\.stagingBackend, store: { $0.stagingBaseURLString }, set: { $0.stagingBaseURLString = $1 }))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-            TextField("Staging WebSocket URL (wss://…)", text: binding(get: { $0.stagingWebSocketURLString }, set: { $0.stagingWebSocketURLString = $1 }))
+            TextField("Staging WebSocket URL (wss://…)", text: draft(\.stagingWebsocket, store: { $0.stagingWebSocketURLString }, set: { $0.stagingWebSocketURLString = $1 }))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
             HStack {
@@ -420,7 +482,8 @@ public struct SettingsView: View {
             HStack {
                 Text("Session Key")
                 Spacer()
-                TextField("Desktop session key", text: $remoteDesktopSessionKey)
+                TextField("9-digit number", text: $remoteDesktopSessionKey)
+                    .keyboardType(.numberPad)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .multilineTextAlignment(.trailing)
@@ -442,7 +505,7 @@ public struct SettingsView: View {
             }
             .disabled(remoteDesktopSessionKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-            Text("Desktop must be running ZYRAXIS server with remote desktop enabled. Get session key from desktop app.")
+            Text("Laptop par ZYRAXIS desktop app → Settings → Remote Desktop → “Session key banao”. Jo 9-digit number dikhe wo yahan paste karo (ya tray icon → Remote Desktop — session key). Sirf tab chalega jab laptop app + server dono on hon.")
                 .font(ZyraxisTheme.caption())
                 .foregroundStyle(.secondary)
         }
@@ -511,6 +574,35 @@ public struct SettingsView: View {
                 showingResetConfirm = true
             }
         }
+    }
+
+    // MARK: - URL drafts
+
+    /// Pulls the stored URLs into the local drafts (screen open / reset).
+    private func seedURLDrafts() {
+        let s = deps.settings
+        urlDraft = SettingsURLDraft(
+            backend: s.backendBaseURLString,
+            websocket: s.websocketURLString,
+            devBackend: s.devBaseURLString,
+            devWebsocket: s.devWebSocketURLString,
+            stagingBackend: s.stagingBaseURLString,
+            stagingWebsocket: s.stagingWebSocketURLString
+        )
+    }
+
+    /// Applies a pending debounced edit immediately (Done tapped / screen
+    /// dismissed), so a fast exit never loses the last URL typed.
+    private func flushURLDrafts() {
+        commitTask?.cancel()
+        commitTask = nil
+        let s = deps.settings
+        if s.backendBaseURLString != urlDraft.backend { s.backendBaseURLString = urlDraft.backend }
+        if s.websocketURLString != urlDraft.websocket { s.websocketURLString = urlDraft.websocket }
+        if s.devBaseURLString != urlDraft.devBackend { s.devBaseURLString = urlDraft.devBackend }
+        if s.devWebSocketURLString != urlDraft.devWebsocket { s.devWebSocketURLString = urlDraft.devWebsocket }
+        if s.stagingBaseURLString != urlDraft.stagingBackend { s.stagingBaseURLString = urlDraft.stagingBackend }
+        if s.stagingWebSocketURLString != urlDraft.stagingWebsocket { s.stagingWebSocketURLString = urlDraft.stagingWebsocket }
     }
 
     // MARK: - Keychain helpers
@@ -615,6 +707,5 @@ private struct LabeledRow: View {
 }
 
 #Preview {
-    SettingsView()
-        .environmentObject(AppDependencies.makeDefault())
+    SettingsView(dependencies: AppDependencies.makeDefault())
 }

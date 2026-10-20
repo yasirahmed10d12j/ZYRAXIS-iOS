@@ -114,6 +114,11 @@ public final class AppDependencies: ObservableObject {
 
         // Forward nested ObservableObject changes so views observing only
         // `AppDependencies` still refresh when children change.
+        // NOTE: `MainAssistantView` reads `deps.voiceManager.voiceState`,
+        // `deps.isStreaming` and `deps.webSocket.state` through this forward,
+        // so these must stay. The Settings lag is fixed instead by keeping URL
+        // text in local draft state (no store write per keystroke) and by
+        // caching `SettingsStore.backendConfig`.
         stateMachine.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
         voiceManager.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
         settings.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)

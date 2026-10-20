@@ -112,8 +112,7 @@ public struct MainAssistantView: View {
             }
         }
         .sheet(isPresented: $showingSettings) {
-            SettingsView()
-                .environmentObject(deps)
+            SettingsView(dependencies: deps)
         }
         .onAppear {
             deps.setVoiceControlHandler { [weak deps] action in
