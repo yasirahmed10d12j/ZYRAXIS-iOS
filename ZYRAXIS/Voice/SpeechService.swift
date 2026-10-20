@@ -16,12 +16,18 @@ public protocol SpeechService {
     func resume() async
     /// Applies voice + rate for subsequent utterances (called before each
     /// `speak` by the engine).
-    func applyVoiceSettings(rate: Float, voiceIdentifier: String?)
+    func applyVoiceSettings(rate: Float, voiceIdentifier: String?, preferFemale: Bool)
 }
 
 public extension SpeechService {
     /// Default: voice selection unsupported (honest no-op).
-    func applyVoiceSettings(rate: Float, voiceIdentifier: String?) {}
+    func applyVoiceSettings(rate: Float, voiceIdentifier: String?, preferFemale: Bool) {}
+
+    /// Convenience for callers that do not care about gender (kept so the
+    /// older two-argument call sites and test doubles keep working).
+    func applyVoiceSettings(rate: Float, voiceIdentifier: String?) {
+        applyVoiceSettings(rate: rate, voiceIdentifier: voiceIdentifier, preferFemale: false)
+    }
 }
 
 /// Honest placeholder: every method is a no-op. Exists so the

@@ -382,7 +382,10 @@ public struct SettingsView: View {
                 "Romantic mode (warm, affectionate replies)",
                 isOn: binding(get: { $0.romanticMode }, set: { $0.romanticMode = $1 })
             )
-            Text("Bolo \"kaccha papad\" se ON, \"pakka papad\" se OFF. Facts wahi rahenge - sirf andaz badlega.")
+            Text("Bolo \"kaccha papad\" se ON, \"pakka papad\" se OFF. ON hone par ZYRAXIS girlfriend ki tarah Hinglish me baat karegi - warm, teasing, jokes aur double meaning samajhkar. Facts wahi rahenge.")
+                .font(ZyraxisTheme.caption())
+                .foregroundStyle(.secondary)
+            Text("Asli Hindi female voice ke liye: iOS Settings → Accessibility → Spoken Content → Voices → Hindi → koi female voice (jaise Lekha) download karo. Phir Voice section me use chuno.")
                 .font(ZyraxisTheme.caption())
                 .foregroundStyle(.secondary)
         }

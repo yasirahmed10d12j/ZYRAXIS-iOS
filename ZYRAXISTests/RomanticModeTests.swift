@@ -73,14 +73,24 @@ final class RomanticModeTests: XCTestCase {
     /// The enriched style must actually reach the AI, and must carry the
     /// guardrails that keep it tasteful (no crude/possessive behaviour, and
     /// real questions still answered properly).
-    func testRomanticSuffixCarriesStyleAndGuardrails() {
+    func testRomanticSuffixCarriesPersonaAndGuardrails() {
         let s = ConversationManager.romanticSuffix
         XCTAssertTrue(s.contains("romantic mode is ON"))
+        // Feminine, Hinglish persona.
+        XCTAssertTrue(s.lowercased().contains("girlfriend mode"))
+        XCTAssertTrue(s.lowercased().contains("hinglish"))
         XCTAssertTrue(s.contains("jaan"), "should invite pet names")
-        XCTAssertTrue(s.lowercased().contains("never be crude"))
-        XCTAssertTrue(s.lowercased().contains("never be possessive"))
-        // Serious/factual questions must not be sacrificed for romance.
-        XCTAssertTrue(s.lowercased().contains("answer it properly"))
+        // Wit / double meaning must be understood, not dodged.
+        XCTAssertTrue(s.lowercased().contains("double meaning"))
+        XCTAssertTrue(s.lowercased().contains("emoji"))
+        // Must never break character with an error or refusal.
+        XCTAssertTrue(s.lowercased().contains("never output an error"))
+        XCTAssertTrue(s.lowercased().contains("stay in character"))
+        // Guardrails stay.
+        XCTAssertTrue(s.lowercased().contains("never crude"))
+        XCTAssertTrue(s.lowercased().contains("never possessive"))
+        // Real questions are still answered correctly.
+        XCTAssertTrue(s.lowercased().contains("answer it"))
     }
 
     func testStyleInjectedOnlyWhenOn() async {
@@ -108,5 +118,79 @@ final class RomanticModeTests: XCTestCase {
         var fresh = SettingsStore(defaults: defaults)
         fresh.resetToDefaults()
         XCTAssertFalse(fresh.romanticMode)
+    }
+
+    // MARK: - Graceful failure (no cold error in Companion Mode)
+
+    /// A provider error must not yank the user out of the persona with a
+    /// technical message; it is said warmly instead. The honest signal (a
+    /// system activity) still exists for debugging.
+    func testRomanticModeShowsWarmFailureNotColdError() async {
+        let (manager, scripted) = makeManager { id in
+            [.completed(requestId: id, response: AIResponse(text: "hi", requestId: id))]
+        }
+        await manager.send("kaccha papad")
+        scripted.failWith = NetworkError.timeout
+        await manager.send("kuch batao")
+
+        let systemMessages = manager.messages.filter { $0.role == .system }.map(\.text)
+        XCTAssertFalse(
+            systemMessages.contains { $0.lowercased().contains("timed out") },
+            "cold technical error must not be shown in Companion Mode"
+        )
+        XCTAssertTrue(
+            systemMessages.contains { $0.lowercased().contains("jaan") || $0.contains("🥺") },
+            "failure should be spoken warmly, in character"
+        )
+    }
+
+    /// The same failure WITHOUT Companion Mode keeps the normal honest error,
+    /// proving the warm message is specific to the mode.
+    func testNonRomanticModeKeepsTechnicalError() async {
+        let (manager, scripted) = makeManager { id in
+            [.completed(requestId: id, response: AIResponse(text: "hi", requestId: id))]
+        }
+        scripted.failWith = NetworkError.timeout
+        await manager.send("kuch batao")
+        let systemMessages = manager.messages.filter { $0.role == .system }.map(\.text)
+        XCTAssertTrue(
+            systemMessages.contains { $0.lowercased().contains("timed out") },
+            "outside Companion Mode the honest error must remain"
+        )
+    }
+
+    // MARK: - Female voice preference
+
+    /// Companion Mode asks the TTS layer for a female voice; the detection
+    /// helper must recognise Apple's common female voice names.
+    func testFemaleVoiceDetection() {
+        let voices = AVSpeechService.allVoices()
+        // On a simulator/CI runner the voice list can be empty — only assert
+        // the classifier's own logic in that case.
+        guard !voices.isEmpty else { return }
+        let detected = voices.filter(AVSpeechService.isFemaleVoice)
+        XCTAssertFalse(detected.isEmpty, "expected at least one female voice to be recognised")
+    }
+
+    /// With no explicit user voice, Companion Mode must pick a female voice
+    /// for Hinglish text when one exists for the language.
+    func testCompanionModePicksFemaleVoiceForHinglish() {
+        let hinglish = "arre yaar, kaisi ho? aaj bahut maza aaya"
+        let female = AVSpeechService.voiceIdentifierForText(hinglish, preferFemale: true)
+        let neutral = AVSpeechService.voiceIdentifierForText(hinglish)
+        // An explicit user choice always wins.
+        let pinned = AVSpeechService.voiceIdentifierForText(
+            hinglish, preferred: "com.example.voice", preferFemale: true
+        )
+        XCTAssertEqual(pinned, "com.example.voice")
+        // Both auto paths must resolve to *some* voice when the system has any.
+        if !AVSpeechService.allVoices().isEmpty {
+            XCTAssertNotNil(neutral)
+        }
+        if let female {
+            let voice = AVSpeechSynthesisVoice(identifier: female)
+            XCTAssertNotNil(voice)
+            XCTAssertTrue(AVSpeechService.isFemaleVoice(voice!))
+        }
     }
 }

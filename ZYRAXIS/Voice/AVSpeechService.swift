@@ -27,15 +27,19 @@ public final class AVSpeechService: NSObject, @preconcurrency SpeechService {
     public var speechRate: Float = AVSpeechUtteranceDefaultSpeechRate
     /// Explicit voice identifier, or nil for the system default voice.
     public var voiceIdentifier: String?
+    /// Companion Mode: prefer a female voice for auto-detected languages so
+    /// Hinglish/Hindi lines are not read in a male voice.
+    public var preferFemaleVoice = false
 
     public override init() {
         super.init()
     }
 
     /// Applies engine-synced voice settings (clamped to the valid range).
-    public func applyVoiceSettings(rate: Float, voiceIdentifier: String?) {
+    public func applyVoiceSettings(rate: Float, voiceIdentifier: String?, preferFemale: Bool) {
         speechRate = Self.clampedRate(rate)
         self.voiceIdentifier = voiceIdentifier
+        self.preferFemaleVoice = preferFemale
     }
 
     /// Valid speech rates for Settings sliders/tests.
@@ -64,7 +68,14 @@ public final class AVSpeechService: NSObject, @preconcurrency SpeechService {
     /// Detects the dominant script of the text and returns a matching voice
     /// identifier, or nil if no match (falls back to explicit/default).
     /// Supports: Devanagari (Hindi/Marathi), Arabic/Urdu, Latin (English/etc).
-    public static func voiceIdentifierForText(_ text: String, preferred: String? = nil) -> String? {
+    ///
+    /// `preferFemale` is used by Companion Mode: among the matching voices it
+    /// picks a female one, so Hinglish lines are not read in a male voice.
+    public static func voiceIdentifierForText(
+        _ text: String,
+        preferred: String? = nil,
+        preferFemale: Bool = false
+    ) -> String? {
         // If user explicitly set a voice, respect it
         if let preferred, !preferred.isEmpty {
             return preferred
@@ -72,10 +83,34 @@ public final class AVSpeechService: NSObject, @preconcurrency SpeechService {
         let script = dominantScript(of: text)
         let all = AVSpeechSynthesisVoice.speechVoices()
         let candidates = all.filter { $0.language.hasPrefix(script.localePrefix) }
-        // Prefer enhanced voices
-        let enhanced = candidates.filter { $0.quality == .enhanced }
-        let best = enhanced.first ?? candidates.first
-        return best?.identifier
+        let pool = candidates.isEmpty ? all : candidates
+        // Prefer enhanced, then gender, then any.
+        let enhanced = pool.filter { $0.quality == .enhanced }
+        let base = enhanced.isEmpty ? pool : enhanced
+        if preferFemale {
+            let female = base.filter(Self.isFemaleVoice)
+            if let f = female.first { return f.identifier }
+            // No female in the enhanced set — look across the whole locale.
+            let femaleAny = pool.filter(Self.isFemaleVoice)
+            if let f = femaleAny.first { return f.identifier }
+        }
+        return base.first?.identifier
+    }
+
+    /// Best-effort female detection. iOS exposes no gender API, so we rely on
+    /// the well-known voice names Apple ships (Samantha, Lekha, Siri female
+    /// names, etc.). Unknown names are treated as not-female, which only means
+    /// the picker falls through to the default — never a crash.
+    public static func isFemaleVoice(_ voice: AVSpeechSynthesisVoice) -> Bool {
+        let name = voice.name.lowercased()
+        let femaleNames = [
+            "samantha", "karen", "moira", "tessa", "fiona", "victoria",
+            "lekha", "veena", "rishi_f", "amelie", "anna", "ellen",
+            "ioana", "laura", "melina", "yelda", "zosia", "sara",
+            "alice", "amelie", "audrey", "marie", "nora", "paulina",
+            "milena", "kanya", "damayanti", "sira", "female"
+        ]
+        return femaleNames.contains { name.contains($0) }
     }
 
     private static func dominantScript(of text: String) -> Script {
@@ -120,13 +155,20 @@ public final class AVSpeechService: NSObject, @preconcurrency SpeechService {
         guard !trimmed.isEmpty else { return }
         stopImmediately()
         let utterance = AVSpeechUtterance(string: trimmed)
-        // Explicit voice when set and valid; otherwise auto-detect from text language.
-        let voiceId = voiceIdentifier ?? Self.voiceIdentifierForText(trimmed)
+        // Explicit voice when set and valid; otherwise auto-detect from text
+        // language (Companion Mode additionally prefers a female voice).
+        let voiceId = voiceIdentifier ?? Self.voiceIdentifierForText(
+            trimmed,
+            preferFemale: preferFemaleVoice
+        )
         if let id = voiceId,
            let voice = AVSpeechSynthesisVoice(identifier: id) {
             utterance.voice = voice
         }
         utterance.rate = speechRate
+        // Slightly higher pitch in Companion Mode for a softer, female tone
+        // (still within the natural range — never cartoonish).
+        utterance.pitchMultiplier = preferFemaleVoice ? 1.08 : 1.0
         utterance.preUtteranceDelay = 0
         utterance.postUtteranceDelay = 0
         synthesizer.speak(utterance)
