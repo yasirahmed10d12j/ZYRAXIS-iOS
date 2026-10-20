@@ -22,15 +22,27 @@ public enum RomanticPersona {
 
     /// Kept separate from the raw file so tests can assert both the parsing
     /// rules and the fallback independently of bundle contents.
+    ///
+    /// A line is a comment only when its FIRST character is `#`. `##` is a
+    /// section heading, not a comment: it is useful structure for the model,
+    /// and treating it as a comment silently deleted every heading in the
+    /// file. The distinction is exactly the length of the `#` run.
     static func parse(_ raw: String) -> String {
         let kept = raw
             .split(separator: "\n", omittingEmptySubsequences: false)
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { line in
-                !line.isEmpty && !line.hasPrefix("#")
+                !line.isEmpty && !isComment(line)
             }
         guard !kept.isEmpty else { return "" }
         return "\n\n" + kept.joined(separator: "\n")
+    }
+
+    /// True only for lines that begin with a single `#`. `##` and deeper are
+    /// headings and are kept.
+    private static func isComment(_ line: String) -> Bool {
+        guard line.hasPrefix("#") else { return false }
+        return !line.hasPrefix("##")
     }
 
     private static let cached: String = {

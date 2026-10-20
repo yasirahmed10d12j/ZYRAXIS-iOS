@@ -244,18 +244,32 @@ final class RomanticModeTests: XCTestCase {
     /// Whatever the source, the text the model receives must satisfy every
     /// assertion the persona promises — this is what guards a bad edit.
     func testLoadedPersonaStillSatisfiesContract() {
-        let s = RomanticPersona.text
+        let s = RomanticPersona.text.lowercased()
         XCTAssertFalse(s.isEmpty)
         for phrase in [
-            "romantic mode is ON", "girlfriend mode", "hinglish", "jaan",
+            "romantic mode is on", "girlfriend mode", "hinglish", "jaan",
             "double meaning", "emoji", "never output an error",
             "stay in character", "answer it",
         ] {
             XCTAssertTrue(
-                s.lowercased().contains(phrase),
+                s.contains(phrase),
                 "persona lost required phrase: \(phrase)"
             )
         }
+    }
+
+    /// Section headings are structure the model benefits from, so `##` must
+    /// survive parsing. Only a single-`#` line is an editor comment.
+    func testParseKeepsHeadingsDropsOnlySingleHashComments() {
+        let raw = """
+        # a comment
+        ## A Heading
+        body text
+        """
+        let parsed = RomanticPersona.parse(raw)
+        XCTAssertTrue(parsed.contains("## A Heading"), "headings must survive")
+        XCTAssertTrue(parsed.contains("body text"))
+        XCTAssertFalse(parsed.contains("# a comment"))
     }
 
     /// The compiled-in fallback must remain a valid persona on its own, since
