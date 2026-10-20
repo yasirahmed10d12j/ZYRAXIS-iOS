@@ -25,7 +25,13 @@ public final class URLSessionAPIClient: APIClient, Sendable {
             let sc = URLSessionConfiguration.ephemeral
             sc.timeoutIntervalForRequest = config.requestTimeout
             sc.timeoutIntervalForResource = config.requestTimeout * 2
-            sc.waitsForConnectivity = true
+            // FALSE on purpose. With it on, a request to a host that is
+            // configured but unreachable (laptop hub asleep, server down)
+            // parks silently until the timeout instead of failing fast — the
+            // user stares at a spinner for 30 s before the AI even starts.
+            // Off, the connection attempt fails immediately and callers can
+            // degrade (local-only memory, fallback provider) without delay.
+            sc.waitsForConnectivity = false
             self.session = URLSession(configuration: sc)
         }
     }

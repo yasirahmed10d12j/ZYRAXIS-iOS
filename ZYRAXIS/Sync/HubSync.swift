@@ -68,6 +68,82 @@ private func hubDate(from string: String?) -> Date? {
     return formatter.date(from: string)
 }
 
+/// Shared circuit breaker for hub sync.
+///
+/// Why it exists: every chat turn asks the memory service for context BEFORE
+/// the AI request is dispatched. When the hub URL is configured but the
+/// laptop is asleep/off, that per-turn hub round-trip used to sit on the
+/// connection until the 30 s request timeout — the reply "took 20-25 s"
+/// even though Gemini itself answers in ~2 s.
+///
+/// Behaviour:
+/// - A hub call costs one short attempt (`hubProbeTimeout`).
+/// - On failure the breaker OPENS for `openSeconds`; every call in that
+///   window returns immediately without touching the network, so a dead hub
+///   is free rather than slow.
+/// - The very next call after the window probes again, so the hub coming
+///   back is picked up automatically (no manual reconnect, no toggle).
+///
+/// Deliberately NOT `@MainActor`: it is referenced from default-argument
+/// expressions (`= .shared`), which are nonisolated, and from the sendable
+/// fallback path. State is guarded by a lock instead, so it is safe to touch
+/// from any context.
+public final class HubCircuitBreaker: @unchecked Sendable {
+    public static let shared = HubCircuitBreaker()
+
+    /// How long a hub request may take before we call the hub unreachable.
+    /// Deliberately short: this sits on the critical path of a chat turn.
+    public static let hubProbeTimeout: TimeInterval = 2.0
+    /// How long the breaker stays open after a failure.
+    public static let openSeconds: TimeInterval = 30.0
+
+    private let lock = NSLock()
+    private var openUntil: Date?
+
+    public init() {}
+
+    /// True when the caller may attempt a hub request right now.
+    public func shouldAttempt(now: Date = Date()) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let openUntil else { return true }
+        return now >= openUntil
+    }
+
+    public func recordSuccess() {
+        lock.lock()
+        defer { lock.unlock() }
+        openUntil = nil
+    }
+
+    /// Opens the breaker on a failure that means "hub unreachable"
+    /// (timeout/transport/no-connection). Server-side responses — even
+    /// errors — prove the hub is up and must NOT open it.
+    public func recordFailure(_ error: Error) {
+        guard Self.isUnreachable(error) else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        openUntil = Date().addingTimeInterval(Self.openSeconds)
+    }
+
+    /// Test/seatbelt hook: forget any open state.
+    public func reset() {
+        recordSuccess()
+    }
+
+    static func isUnreachable(_ error: Error) -> Bool {
+        if let net = error as? NetworkError {
+            switch net {
+            case .timeout, .transport, .noConnection:
+                return true
+            default:
+                return false
+            }
+        }
+        return (error as NSError).domain == NSURLErrorDomain
+    }
+}
+
 @MainActor
 public final class SyncedMemoryService: MemoryService {
 
@@ -75,17 +151,20 @@ public final class SyncedMemoryService: MemoryService {
     private let api: any APIClient
     private let auth: any BackendAuthProvider
     private let configProvider: () -> BackendConfig
+    private let breaker: HubCircuitBreaker
 
     public init(
         local: any MemoryService,
         api: any APIClient,
         auth: any BackendAuthProvider,
-        configProvider: @escaping () -> BackendConfig
+        configProvider: @escaping () -> BackendConfig,
+        breaker: HubCircuitBreaker = .shared
     ) {
         self.local = local
         self.api = api
         self.auth = auth
         self.configProvider = configProvider
+        self.breaker = breaker
     }
 
     private struct Target: Sendable {
@@ -103,6 +182,9 @@ public final class SyncedMemoryService: MemoryService {
     private func authorized(path: String, method: String, body: Data?, target: Target) throws -> URLRequest {
         var request = try api.makeRequest(path: path, method: method, body: body, headers: [:])
         request.setValue("Bearer \(target.key)", forHTTPHeaderField: "Authorization")
+        // Hub sync never stalls a chat turn: the probe timeout wins over the
+        // general request timeout (which is tuned for the AI backend).
+        request.timeoutInterval = min(request.timeoutInterval, HubCircuitBreaker.hubProbeTimeout)
         return request
     }
 
@@ -121,7 +203,10 @@ public final class SyncedMemoryService: MemoryService {
 
     public func search(query: String, limit: Int) async throws -> [MemoryItem] {
         var out = try await local.search(query: query, limit: limit)
-        guard let hub = target() else { return out }
+        // Local answer is already in hand; the hub only adds cross-device
+        // extras. Skip it entirely while the breaker is open so a down hub
+        // costs this turn nothing.
+        guard let hub = target(), breaker.shouldAttempt() else { return out }
         do {
             var components = URLComponents()
             components.queryItems = [
@@ -131,12 +216,14 @@ public final class SyncedMemoryService: MemoryService {
             let path = "/api/\(hub.version)/memory" + (components.percentEncodedQuery.map { "?\($0)" } ?? "")
             let request = try authorized(path: path, method: "GET", body: nil, target: hub)
             let list: HubMemoryList = try await api.send(request, as: HubMemoryList.self)
+            breaker.recordSuccess()
             var seen = Set(out.map { $0.content })
             for dto in list.memories where !seen.contains(dto.content) {
                 seen.insert(dto.content)
                 out.append(MemoryItem(content: dto.content, tags: dto.tags, importance: dto.importance))
             }
         } catch {
+            breaker.recordFailure(error)
             ZyraxisLogger.log(.memory, "hub search failed (local only): \(error.localizedDescription)")
         }
         return out
@@ -179,17 +266,20 @@ public final class SyncedTaskService: TaskService {
     private let api: any APIClient
     private let auth: any BackendAuthProvider
     private let configProvider: () -> BackendConfig
+    private let breaker: HubCircuitBreaker
 
     public init(
         local: any TaskService,
         api: any APIClient,
         auth: any BackendAuthProvider,
-        configProvider: @escaping () -> BackendConfig
+        configProvider: @escaping () -> BackendConfig,
+        breaker: HubCircuitBreaker = .shared
     ) {
         self.local = local
         self.api = api
         self.auth = auth
         self.configProvider = configProvider
+        self.breaker = breaker
     }
 
     private struct Target: Sendable {
@@ -207,20 +297,25 @@ public final class SyncedTaskService: TaskService {
     private func authorized(path: String, method: String, body: Data?, target: Target) throws -> URLRequest {
         var request = try api.makeRequest(path: path, method: method, body: body, headers: [:])
         request.setValue("Bearer \(target.key)", forHTTPHeaderField: "Authorization")
+        // Same rule as memory sync: never let hub chatter stall a user action.
+        request.timeoutInterval = min(request.timeoutInterval, HubCircuitBreaker.hubProbeTimeout)
         return request
     }
 
     /// Hub twin id for a local title (hub IDs differ per store — matched,
     /// never assumed). Nil when absent or unreachable.
     private func hubTwinId(title: String, target: Target) async -> String? {
+        guard breaker.shouldAttempt() else { return nil }
         do {
             var components = URLComponents()
             components.queryItems = [URLQueryItem(name: "filter", value: "all")]
             let path = "/api/\(target.version)/tasks" + (components.percentEncodedQuery.map { "?\($0)" } ?? "")
             let request = try authorized(path: path, method: "GET", body: nil, target: target)
             let list: HubTaskList = try await api.send(request, as: HubTaskList.self)
+            breaker.recordSuccess()
             return list.tasks.first(where: { $0.title == title })?.id
         } catch {
+            breaker.recordFailure(error)
             return nil
         }
     }

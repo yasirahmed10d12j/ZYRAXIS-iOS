@@ -109,7 +109,8 @@ public final class AppDependencies: ObservableObject {
             backendService: backendService,
             geminiService: geminiService,
             groqService: groqService,
-            contactService: contactService
+            contactService: contactService,
+            hubBreaker: HubCircuitBreaker.shared
         )
 
         // Forward nested ObservableObject changes so views observing only
@@ -163,14 +164,16 @@ public final class AppDependencies: ObservableObject {
             local: InMemoryMemoryService(),
             api: api,
             auth: KeychainAuthProvider(keychain: keychain),
-            configProvider: { [weak settings] in settings?.backendConfig ?? .default }
+            configProvider: { [weak settings] in settings?.backendConfig ?? .default },
+            breaker: HubCircuitBreaker.shared
         )
         let notifications: any NotificationService = UNNotificationService()
         let tasks: any TaskService = SyncedTaskService(
             local: LocalTaskService(notifications: notifications),
             api: api,
             auth: KeychainAuthProvider(keychain: keychain),
-            configProvider: { [weak settings] in settings?.backendConfig ?? .default }
+            configProvider: { [weak settings] in settings?.backendConfig ?? .default },
+            breaker: HubCircuitBreaker.shared
         )
         let tools: any ToolRegistry = DefaultToolRegistry(seed: [AppInfoTool(), DeviceInfoTool(), NotificationTool(), AlarmTool(), EmailTool()])
         let vision: any VisionService = UnimplementedVisionService()

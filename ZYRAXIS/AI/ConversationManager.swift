@@ -143,6 +143,9 @@ public final class ConversationManager: ObservableObject {
     private let backendService: any AIService
     private let geminiService: any AIService
     private let groqService: any AIService
+    /// Shared with the synced memory/task services so the hub's reachability
+    /// is known once for the whole turn (memory pre-fetch + fallback chain).
+    private let hubBreaker: HubCircuitBreaker
 
     private var streamTask: Task<Void, Never>?
     private var lastSeq: [UUID: Int] = [:]
@@ -165,7 +168,8 @@ public final class ConversationManager: ObservableObject {
         // (MainActor-isolated init called from a nonisolated context).
         geminiService: (any AIService)? = nil,
         groqService: (any AIService)? = nil,
-        contactService: (any ContactService)? = nil
+        contactService: (any ContactService)? = nil,
+        hubBreaker: HubCircuitBreaker = .shared
     ) {
         self.stateMachine = stateMachine
         self.settings = settings
@@ -178,6 +182,7 @@ public final class ConversationManager: ObservableObject {
         self.geminiService = geminiService ?? GeminiDirectService()
         self.groqService = groqService ?? GroqDirectService()
         self.contactService = contactService
+        self.hubBreaker = hubBreaker
     }
 
     // MARK: - Service resolution
@@ -452,6 +457,12 @@ public final class ConversationManager: ObservableObject {
                 return
             } catch {
                 guard requestId == currentRequestId else { return } // superseded
+                // Learn hub reachability from real traffic: a backend attempt
+                // that died on the wire opens the breaker, so the next turn
+                // skips it instead of paying the timeout again.
+                if service.provider == .customBackend {
+                    hubBreaker.recordFailure(error)
+                }
                 if isFallbackWorthy(error), !services.isEmpty {
                     // Fresh attempt, fresh accumulation: the next provider's
                     // seq restarts at 1, so reset the dup/stale guards.
@@ -469,7 +480,9 @@ public final class ConversationManager: ObservableObject {
     }
 
     /// Candidate services in try-order. Mock/dev modes never fall back.
-    /// Backend sirf configured hone par (bina URL ke 30s hang nahi).
+    /// Backend sirf configured hone par (bina URL ke 30s hang nahi), aur
+    /// tabhi jab hub recently reachable ho — warna dead hub chain me pade
+    /// rehne se har reply ek timeout lamba ho jaata hai.
     private func fallbackCandidates(startingWith first: any AIService) -> [any AIService] {
         let firstProvider = first.provider
         guard firstProvider == .gemini || firstProvider == .groq || firstProvider == .customBackend else {
@@ -482,7 +495,10 @@ public final class ConversationManager: ObservableObject {
             case .gemini: out.append(geminiService)
             case .groq: out.append(groqService)
             case .customBackend:
-                if settings.backendConfig.isConfigured { out.append(backendService) }
+                // Only when the hub is configured AND not known-unreachable.
+                if settings.backendConfig.isConfigured, hubBreaker.shouldAttempt() {
+                    out.append(backendService)
+                }
             default: break
             }
         }

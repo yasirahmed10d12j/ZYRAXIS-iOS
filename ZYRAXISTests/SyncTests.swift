@@ -59,21 +59,31 @@ final class SyncTests: XCTestCase {
         BackendConfig(baseURL: URL(string: "https://hub.test"), websocketURL: nil)
     }
 
-    private func makeMemory(api: FakeAPIClient, key: String? = "k") -> SyncedMemoryService {
+    private func makeMemory(
+        api: FakeAPIClient,
+        key: String? = "k",
+        breaker: HubCircuitBreaker = HubCircuitBreaker()
+    ) -> SyncedMemoryService {
         SyncedMemoryService(
             local: InMemoryMemoryService(),
             api: api,
             auth: FakeAuth(token: key),
-            configProvider: { [config = self.hubConfig()] in config }
+            configProvider: { [config = self.hubConfig()] in config },
+            breaker: breaker
         )
     }
 
-    private func makeTasks(api: FakeAPIClient, key: String? = "k") -> SyncedTaskService {
+    private func makeTasks(
+        api: FakeAPIClient,
+        key: String? = "k",
+        breaker: HubCircuitBreaker = HubCircuitBreaker()
+    ) -> SyncedTaskService {
         SyncedTaskService(
             local: LocalTaskService(notifications: nil),
             api: api,
             auth: FakeAuth(token: key),
-            configProvider: { [config = self.hubConfig()] in config }
+            configProvider: { [config = self.hubConfig()] in config },
+            breaker: breaker
         )
     }
 
@@ -183,5 +193,68 @@ final class SyncTests: XCTestCase {
         XCTAssertFalse(first.isEmpty)
         XCTAssertEqual(first, second, "same install must keep its identity")
         XCTAssertEqual(first.components(separatedBy: "-").count, 5, "UUID shape")
+    }
+
+    // MARK: - Hub circuit breaker (the "reply took 20-25 s" fix)
+
+    /// The bug: a configured-but-dead hub was contacted on EVERY turn before
+    /// the AI ran, costing a full timeout. Now the first failure opens the
+    /// breaker and later turns make zero hub calls.
+    func testDeadHubIsContactedOnlyOnce() async throws {
+        let api = FakeAPIClient()
+        api.failAll = true
+        let breaker = HubCircuitBreaker()
+        let svc = makeMemory(api: api, breaker: breaker)
+
+        // Turn 1: one attempt, fails, breaker opens.
+        _ = try await svc.search(query: "a", limit: 5)
+        let afterFirst = api.calls.count
+        XCTAssertGreaterThan(afterFirst, 0, "the first turn must probe the hub")
+
+        // Turns 2..4: no network at all, and the local answer still works.
+        for _ in 0..<3 {
+            let found = try await svc.search(query: "a", limit: 5)
+            XCTAssertNotNil(found, "local memory must still answer")
+        }
+        XCTAssertEqual(api.calls.count, afterFirst, "open breaker must not touch the network")
+    }
+
+    /// Server-side failures prove the hub is alive — they must NOT open the
+    /// breaker, or a healthy hub with a bad request would stop syncing.
+    func testServerErrorDoesNotOpenBreaker() {
+        let breaker = HubCircuitBreaker()
+        XCTAssertTrue(breaker.shouldAttempt())
+        breaker.recordFailure(NetworkError.server(statusCode: 500, message: "boom"))
+        XCTAssertTrue(breaker.shouldAttempt(), "500 means reachable, not unreachable")
+        breaker.recordFailure(NetworkError.unauthorized)
+        XCTAssertTrue(breaker.shouldAttempt(), "401 means reachable, not unreachable")
+    }
+
+    /// Unreachable-class failures DO open it, and success closes it again.
+    func testUnreachableOpensAndSuccessCloses() {
+        let breaker = HubCircuitBreaker()
+        breaker.recordFailure(NetworkError.timeout)
+        XCTAssertFalse(breaker.shouldAttempt())
+        breaker.recordSuccess()
+        XCTAssertTrue(breaker.shouldAttempt(), "a good call must close the breaker")
+    }
+
+    /// The probe timeout must be short — it sits on the chat critical path.
+    func testHubProbeTimeoutIsShort() {
+        XCTAssertLessThanOrEqual(HubCircuitBreaker.hubProbeTimeout, 3.0)
+        XCTAssertGreaterThanOrEqual(HubCircuitBreaker.hubProbeTimeout, 0.5)
+    }
+
+    /// Tasks get the same protection as memory.
+    func testDeadHubDoesNotSlowTaskListing() async throws {
+        let api = FakeAPIClient()
+        api.failAll = true
+        let breaker = HubCircuitBreaker()
+        let svc = makeTasks(api: api, breaker: breaker)
+        _ = try await svc.list(filter: .all)
+        let afterFirst = api.calls.count
+        _ = try await svc.list(filter: .all)
+        _ = try await svc.list(filter: .all)
+        XCTAssertEqual(api.calls.count, afterFirst, "open breaker must skip hub task calls")
     }
 }
