@@ -53,7 +53,9 @@ public final class GroqDirectService: @preconcurrency AIService {
         var model: String
         var messages: [ChatMessage]
         var temperature: Double = 0.7
-        var maxTokens: Int = 1024
+        /// Matches the Gemini cap: the assistant speaks short replies, so a
+        /// high cap only buys extra generation time.
+        var maxTokens: Int = 512
         var stream: Bool = false
 
         enum CodingKeys: String, CodingKey {

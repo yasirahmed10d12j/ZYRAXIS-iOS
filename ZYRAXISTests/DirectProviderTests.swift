@@ -183,13 +183,20 @@ final class DirectProviderTests: XCTestCase {
         XCTAssertEqual(GroqDirectService().model, DirectProvider.defaultGroqModel)
     }
 
-    func testDefaultGeminiModelIsSupportedStable() {
-        // Pinned to a Stable, non-preview model with free-tier access and a
-        // long support window. If Google retires it, update the default AND
-        // this test together — never silently drift to an unverified ID.
-        // Verified 2026-10-14: Stable, billing not required, shutdown no
-        // earlier than 2027-07-21 (ai.google.dev/gemini-api/docs/models).
-        XCTAssertEqual(DirectProvider.defaultGeminiModel, "gemini-3.5-flash-lite")
+    func testDefaultGeminiModelIsFastAndSelfUpdating() {
+        // Pinned to the "-latest" alias on purpose: Google moves the ID it
+        // points at, so a vendor retirement cannot 404 every chat again.
+        // Measured against the user's own key (2026-10-20): ~0.8-1.8 s per
+        // short reply, vs ~2.5 s for gemini-3.5-flash-lite and ~74 s for
+        // gemini-3.8-flash. Update this test only with fresh measurements.
+        XCTAssertEqual(DirectProvider.defaultGeminiModel, "gemini-flash-lite-latest")
+    }
+
+    func testDefaultGroqModelIsLive() {
+        // `llama-3.1-8b-instant` was retired (404 model_not_found), which
+        // silently broke the whole fallback chain. Verified live 2026-10-20.
+        XCTAssertEqual(DirectProvider.defaultGroqModel, "openai/gpt-oss-120b")
+        XCTAssertNotEqual(DirectProvider.defaultGroqModel, "llama-3.1-8b-instant")
     }
 
     // MARK: - Prompt + SSE helpers
@@ -230,10 +237,24 @@ final class DirectProviderTests: XCTestCase {
         XCTAssertEqual(StubURLProtocol.recordedRequests.count, 1)
         let sent = try XCTUnwrap(StubURLProtocol.recordedRequests.first)
         XCTAssertEqual(sent.url?.host, "generativelanguage.googleapis.com")
-        XCTAssertTrue(sent.url?.path.contains("gemini-3.5-flash-lite:generateContent") == true)
+        // Assert against the configured model, not a hardcoded ID, so a vendor
+        // rotation updates one place (DirectProvider) instead of breaking tests.
+        XCTAssertTrue(sent.url?.path.contains("\(svc.model):generateContent") == true)
+        XCTAssertTrue(sent.url?.path.contains(DirectProvider.defaultGeminiModel) == true)
         XCTAssertEqual(sent.value(forHTTPHeaderField: "x-goog-api-key"), Self.geminiKey)
         // Key must never appear in the URL (query params end up in logs).
         XCTAssertFalse(sent.url?.absoluteString.contains(Self.geminiKey) == true)
+    }
+
+    /// The reply cap is a latency control, not a nicety: the assistant speaks
+    /// one or two sentences, so allowing 1024 tokens only made users wait.
+    func testGeminiCapsOutputTokensForLatency() async throws {
+        let session = Self.stubSession()
+        StubURLProtocol.handler = { _ in .init(data: Self.geminiJSON("ok")) }
+        let svc = GeminiDirectService(keychain: try Self.keychainWithKeys(), session: session)
+        _ = try await svc.sendMessage(Self.request())
+        let gen = try XCTUnwrap(try sentBody()["generationConfig"] as? [String: Any])
+        XCTAssertEqual(gen["maxOutputTokens"] as? Int, 512)
     }
 
     private func sentBody() throws -> [String: Any] {

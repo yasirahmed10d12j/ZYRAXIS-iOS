@@ -45,14 +45,19 @@ public enum NetworkError: LocalizedError, Equatable, Sendable {
     /// Failures worth trying the NEXT provider for (busy/overloaded/dead).
     /// Auth, config, decoding and user-cancel never fall back — retrying
     /// those can only burn time or loop.
+    ///
+    /// 404 IS fallback-worthy: direct providers hit it when a vendor retires
+    /// a model ID (`model_not_found`), which means that provider is dead until
+    /// reconfigured. Not falling back there turned "Gemini is slow" into "no
+    /// answer at all".
     public var isFallbackWorthy: Bool {
         switch self {
-        case .timeout, .transport, .noConnection:
+        case .timeout, .transport, .noConnection, .notFound:
             return true
         case .server(let code, _):
-            return code == 429 || code >= 500
+            return code == 404 || code == 429 || code >= 500
         case .invalidURL, .cancelled, .unauthorized, .forbidden,
-             .notFound, .decoding, .webSocket:
+             .decoding, .webSocket:
             return false
         }
     }

@@ -14,8 +14,17 @@ public enum DirectProvider {
     /// Free-tier default models. IDs rotate — verify live IDs in
     /// AI Studio (Gemini) / console.groq.com (Groq) and override via each
     /// service's `model` property. Never put keys here.
-    public static let defaultGeminiModel = "gemini-3.5-flash-lite"
-    public static let defaultGroqModel = "llama-3.1-8b-instant"
+    ///
+    /// Measured against the user's own keys (2026-10-20, single short prompt):
+    ///   gemini-flash-lite-latest   ~1.0 s   <- chosen
+    ///   gemini-3.5-flash-lite      ~2.5 s
+    ///   gemini-3.8-flash          ~74.0 s   (why replies felt like 10 minutes)
+    /// `-latest` also tracks Google's current release, so a vendor retirement
+    /// can no longer 404 the whole provider.
+    public static let defaultGeminiModel = "gemini-flash-lite-latest"
+    /// `llama-3.1-8b-instant` was retired by Groq (404 model_not_found), which
+    /// broke the fallback chain: Gemini slow → Groq dead → no answer at all.
+    public static let defaultGroqModel = "openai/gpt-oss-120b"
 
     public static let geminiBaseURL = URL(string: "https://generativelanguage.googleapis.com")!
     public static let groqChatURL = URL(string: "https://api.groq.com/openai/v1/chat/completions")!
@@ -71,11 +80,16 @@ public enum DirectProvider {
 
     /// URLSession honoring the caller's timeout for request + idle reads
     /// (idle-read timeout is what keeps streams bounded).
+    ///
+    /// `waitsForConnectivity` is FALSE on purpose: with it on, a request that
+    /// cannot reach the network sits in "waiting" instead of failing, so the
+    /// provider chain above never gets a chance to fall back and the user
+    /// stares at a spinner.
     public static func session(timeout: TimeInterval) -> URLSession {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = timeout
         config.timeoutIntervalForResource = max(timeout * 2, 60)
-        config.waitsForConnectivity = true
+        config.waitsForConnectivity = false
         return URLSession(configuration: config)
     }
 

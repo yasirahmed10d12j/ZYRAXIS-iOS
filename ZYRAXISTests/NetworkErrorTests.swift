@@ -13,6 +13,31 @@ final class NetworkErrorTests: XCTestCase {
         )
     }
 
+    /// The fallback chain must advance when a provider is dead, not when the
+    /// user's key is wrong (retrying auth/config only burns time or loops).
+    func testFallbackWorthyClassification() {
+        // Dead or busy provider -> try the next one.
+        XCTAssertTrue(NetworkError.timeout.isFallbackWorthy)
+        XCTAssertTrue(NetworkError.transport("boom").isFallbackWorthy)
+        XCTAssertTrue(NetworkError.noConnection.isFallbackWorthy)
+        XCTAssertTrue(NetworkError.server(statusCode: 429, message: "slow down").isFallbackWorthy)
+        XCTAssertTrue(NetworkError.server(statusCode: 503, message: "unavailable").isFallbackWorthy)
+
+        // Retired model ID (404 model_not_found) means the provider is dead
+        // until reconfigured — NOT falling back here turned "Gemini is slow"
+        // into "no answer at all".
+        XCTAssertTrue(NetworkError.notFound.isFallbackWorthy)
+        XCTAssertTrue(NetworkError.fromStatusCode(404).isFallbackWorthy)
+        XCTAssertTrue(NetworkError.server(statusCode: 404, message: "model_not_found").isFallbackWorthy)
+
+        // Never fall back: retrying cannot help and may loop.
+        XCTAssertFalse(NetworkError.unauthorized.isFallbackWorthy)
+        XCTAssertFalse(NetworkError.forbidden.isFallbackWorthy)
+        XCTAssertFalse(NetworkError.cancelled.isFallbackWorthy)
+        XCTAssertFalse(NetworkError.invalidURL("nope").isFallbackWorthy)
+        XCTAssertFalse(NetworkError.server(statusCode: 400, message: "bad request").isFallbackWorthy)
+    }
+
     func testDescriptionsAreHelpful() {
         XCTAssertTrue(NetworkError.timeout.localizedDescription.lowercased().contains("timed out"))
         XCTAssertTrue(NetworkError.noConnection.localizedDescription.lowercased().contains("connection"))

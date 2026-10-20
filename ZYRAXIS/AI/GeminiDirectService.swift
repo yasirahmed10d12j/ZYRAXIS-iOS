@@ -60,7 +60,11 @@ public final class GeminiDirectService: @preconcurrency AIService {
 
     private struct GenerationConfig: Encodable {
         var temperature: Double = 0.7
-        var maxOutputTokens: Int = 1024
+        /// The system prompt asks for "one or two small sentences", so a 1024
+        /// cap just let a chatty model generate far more than it would speak —
+        /// and every extra token is latency the user waits on. 512 still leaves
+        /// plenty of room for a how-to answer.
+        var maxOutputTokens: Int = 512
     }
 
     private struct GenerateBody: Encodable {
