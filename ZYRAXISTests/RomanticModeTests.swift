@@ -9,11 +9,22 @@ final class RomanticModeTests: XCTestCase {
 
     private let router = FastCommandRouter()
 
+    /// Isolated store per test. Using `.standard` here leaked state between
+    /// tests (a test that turned Companion Mode on left it on for whatever ran
+    /// next, alphabetically), which made the style/error assertions flaky for
+    /// reasons that had nothing to do with the code under test.
+    private func freshStore() -> SettingsStore {
+        let suite = "zyraxis.romantic.tests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+        return SettingsStore(defaults: defaults)
+    }
+
     private func makeManager(
         builder: @escaping (UUID) -> [AIStreamEvent] = { _ in [] }
     ) -> (ConversationManager, ScriptedAIService) {
         let sm = AssistantStateMachine()
-        let settings = SettingsStore()
+        let settings = freshStore()
         settings.selectedProvider = .mock
         let scripted = ScriptedAIService()
         scripted.builder = builder
@@ -112,8 +123,9 @@ final class RomanticModeTests: XCTestCase {
     }
 
     func testRomanticModePersists() {
-        let defaults = UserDefaults(suiteName: "zyraxis.romantic.tests")!
-        defaults.removePersistentDomain(forName: "zyraxis.romantic.tests")
+        let name = "zyraxis.romantic.persist.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defer { defaults.removePersistentDomain(forName: name) }
         SettingsStore(defaults: defaults).romanticMode = true
         XCTAssertTrue(SettingsStore(defaults: defaults).romanticMode)
         let fresh = SettingsStore(defaults: defaults)
@@ -135,8 +147,10 @@ final class RomanticModeTests: XCTestCase {
         await manager.send("kuch batao")
 
         let systemMessages = manager.messages.filter { $0.role == .system }.map(\.text)
+        // The honest (cold) wording must be replaced by the warm one.
+        let honest = AssistantErrorMapper.userMessage(for: NetworkError.timeout)
         XCTAssertFalse(
-            systemMessages.contains { $0.lowercased().contains("timed out") },
+            systemMessages.contains(honest),
             "cold technical error must not be shown in Companion Mode"
         )
         XCTAssertTrue(
@@ -154,9 +168,17 @@ final class RomanticModeTests: XCTestCase {
         scripted.failWith = NetworkError.timeout
         await manager.send("kuch batao")
         let systemMessages = manager.messages.filter { $0.role == .system }.map(\.text)
+        // The honest wording comes from AssistantErrorMapper. Assert against
+        // what it actually returns for a timeout (not a guessed phrase), so
+        // this test checks behaviour rather than my memory of the string.
+        let honest = AssistantErrorMapper.userMessage(for: NetworkError.timeout)
         XCTAssertTrue(
-            systemMessages.contains { $0.lowercased().contains("timed out") },
+            systemMessages.contains(honest),
             "outside Companion Mode the honest error must remain"
+        )
+        XCTAssertFalse(
+            systemMessages.contains { $0.contains("jaan") || $0.contains("🥺") },
+            "the warm Companion-Mode wording must not leak into normal mode"
         )
     }
 
