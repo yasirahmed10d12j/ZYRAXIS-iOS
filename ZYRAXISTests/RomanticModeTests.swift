@@ -1,4 +1,5 @@
 import XCTest
+import AVFoundation
 @testable import ZYRAXIS
 
 /// Romantic mode: secret trigger phrases, style injection, persistence.
@@ -115,7 +116,7 @@ final class RomanticModeTests: XCTestCase {
         defaults.removePersistentDomain(forName: "zyraxis.romantic.tests")
         SettingsStore(defaults: defaults).romanticMode = true
         XCTAssertTrue(SettingsStore(defaults: defaults).romanticMode)
-        var fresh = SettingsStore(defaults: defaults)
+        let fresh = SettingsStore(defaults: defaults)
         fresh.resetToDefaults()
         XCTAssertFalse(fresh.romanticMode)
     }

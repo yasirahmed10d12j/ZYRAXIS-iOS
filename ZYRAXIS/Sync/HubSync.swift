@@ -344,7 +344,9 @@ public final class SyncedTaskService: TaskService {
 
     public func list(filter: TaskFilter) async throws -> [ZyraxisTask] {
         var out = try await local.list(filter: filter)
-        guard let hub = target() else { return out }
+        // Local list is already in hand; skip the hub entirely while the
+        // breaker is open so a down hub costs this call nothing.
+        guard let hub = target(), breaker.shouldAttempt() else { return out }
         let name: String
         switch filter {
         case .all: name = "all"
@@ -356,6 +358,7 @@ public final class SyncedTaskService: TaskService {
         do {
             let request = try authorized(path: "/api/\(hub.version)/tasks?filter=\(name)", method: "GET", body: nil, target: hub)
             let list: HubTaskList = try await api.send(request, as: HubTaskList.self)
+            breaker.recordSuccess()
             var seen = Set(out.map { $0.title })
             for dto in list.tasks where !seen.contains(dto.title) {
                 seen.insert(dto.title)
@@ -376,6 +379,7 @@ public final class SyncedTaskService: TaskService {
                 }
             }
         } catch {
+            breaker.recordFailure(error)
             ZyraxisLogger.log(.tasks, "hub list failed (local only): \(error.localizedDescription)")
         }
         return out
