@@ -352,9 +352,11 @@ public struct FastCommandRouter: Sendable {
             return .brief
         case "quiz me", "quiz":
             return .answer("Say \"quiz me on\" followed by a topic — e.g. \"quiz me on capitals\".")
-        case "kaccha papad":
+        case "kaccha papad", "kacha papad", "kaccha papad on", "kaccha papad chalu",
+             "romantic mode on", "romantic on", "romantic mode chalu":
             return .romanticMode(true)
-        case "pakka papad":
+        case "pakka papad", "paka papad", "pakka papad off", "pakka papad band",
+             "romantic mode off", "romantic off", "romantic mode band":
             return .romanticMode(false)
         case "volume":
             return .answer("Volume can only be changed with the iPhone side buttons — iOS doesn't let apps set it.")

@@ -126,6 +126,7 @@ public struct SettingsView: View {
                     notificationsSection
                     appearanceSection
                     privacySection
+                    romanticSection
                     memorySection
                     deviceSection
                     wolSection
@@ -367,6 +368,21 @@ public struct SettingsView: View {
         Section("Memory") {
             Toggle("Personal memory", isOn: binding(get: { $0.memoryEnabled }, set: { $0.memoryEnabled = $1 }))
             Text("Phase 1 uses on-device in-memory storage. Backend sync arrives later.")
+                .font(ZyraxisTheme.caption())
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// The mode is voice-first (say "kaccha papad" / "pakka papad"), but a
+    /// visible switch makes the current state obvious and gives a tap route
+    /// when the phone is on mute.
+    private var romanticSection: some View {
+        Section("Companion Mode") {
+            Toggle(
+                "Romantic mode (warm, affectionate replies)",
+                isOn: binding(get: { $0.romanticMode }, set: { $0.romanticMode = $1 })
+            )
+            Text("Bolo \"kaccha papad\" se ON, \"pakka papad\" se OFF. Facts wahi rahenge - sirf andaz badlega.")
                 .font(ZyraxisTheme.caption())
                 .foregroundStyle(.secondary)
         }

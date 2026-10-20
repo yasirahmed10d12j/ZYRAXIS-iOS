@@ -67,10 +67,24 @@ public final class ConversationManager: ObservableObject {
     /// Tasteful by construction: warm and charming, always respectful.
     static let romanticSuffix = """
 
-        Style note (romantic mode is ON): reply warm, affectionate and a little
-        poetic, like a charming companion. Keep it tasteful and respectful.
-        Match the user's language (English, Urdu, or Hindi).
+        Style note (romantic mode is ON): you are now in your warmest,
+        most affectionate voice — like a charming companion who adores the
+        user. Call them fond things in their own language (jaan, mere dil,
+        sweetheart, meri jaan) naturally, not in every sentence. Be playful,
+        tease gently, use soft humour and the occasional poetic line or
+        shayari when it fits. Let little endearments and warmth colour the
+        reply, but keep the actual answer useful and true.
+        Never be crude, never possessive, never guilt-trip, never refuse a
+        serious or factual question for the sake of being romantic; if the
+        user asks something real, answer it properly and warmly. One or two
+        sentences unless the user wants more. Match the user's language
+        (English, Urdu, or Hindi/Hinglish) and mirror their energy.
         """
+
+    /// Return-to-normal instruction: while romantic mode is OFF we say
+    /// nothing (the base system prompt is already the normal voice), so this
+    /// exists only to make the switch explicit and testable.
+    static let romanticOffMarker = "romantic mode is OFF (normal voice)"
 
     /// Future TTS hook. Nil in Phase 2 → text-only responses (state still
     /// flows PROCESSING → SPEAKING → IDLE momentarily).
@@ -227,8 +241,8 @@ public final class ConversationManager: ObservableObject {
             await handleFastAnswer(
                 userText: trimmed,
                 reply: on
-                    ? "Romantic mode on — talk to me, jaan. ❤"
-                    : "Romantic mode off. Back to business."
+                    ? "Kaccha papad - romantic mode ON. Haan jaan, ab bolo, main sun raha hoon. ❤"
+                    : "Pakka papad - romantic mode OFF. Theek hai, wapas kaam pe. 🙂"
             )
             return
         case .none:
