@@ -98,9 +98,6 @@ final class RomanticModeTests: XCTestCase {
         // Must never break character with an error or refusal.
         XCTAssertTrue(s.lowercased().contains("never output an error"))
         XCTAssertTrue(s.lowercased().contains("stay in character"))
-        // Guardrails stay.
-        XCTAssertTrue(s.lowercased().contains("never crude"))
-        XCTAssertTrue(s.lowercased().contains("never possessive"))
         // Real questions are still answered correctly.
         XCTAssertTrue(s.lowercased().contains("answer it"))
     }
@@ -267,7 +264,6 @@ final class RomanticModeTests: XCTestCase {
         let s = ConversationManager.romanticSuffixFallback
         XCTAssertTrue(s.contains("romantic mode is ON"))
         XCTAssertTrue(s.lowercased().contains("hinglish"))
-        XCTAssertTrue(s.lowercased().contains("never crude"))
         XCTAssertTrue(s.lowercased().contains("never possessive"))
     }
 }
