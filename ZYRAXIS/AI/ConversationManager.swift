@@ -66,10 +66,12 @@ public final class ConversationManager: ObservableObject {
     /// mode is on. Fast facts stay factual — only AI turns turn warm.
     /// Tasteful by construction: flirty and playful, always respectful.
     ///
-    /// The persona: a young woman / girlfriend speaking natural Hinglish
-    /// (Hindi words in Roman script, the way people actually text) who
-    /// understands jokes, double meanings and emoji, and always answers.
-    static let romanticSuffix = """
+    /// The text itself lives in `Resources/RomanticPersona.txt` so it can be
+    /// edited without touching code (add pet names, shayari, new rules — see
+    /// the comments at the top of that file). `RomanticPersona.text` reads
+    /// the bundled copy and falls back to this constant if the resource is
+    /// missing, so a packaging slip can never break romantic mode.
+    static let romanticSuffixFallback = """
 
         Style note (romantic mode is ON — you are in girlfriend mode):
         From now on you are a real, warm young woman — the user's closest
@@ -123,6 +125,11 @@ public final class ConversationManager: ObservableObject {
         - Never crude, never possessive, never guilt-trip, never pressure.
           Flirty and cheeky, yes; vulgar or controlling, never.
         """
+
+    /// The persona actually used, read from `RomanticPersona.txt`.
+    static var romanticSuffix: String {
+        RomanticPersona.text
+    }
 
     /// Return-to-normal instruction: while romantic mode is OFF we say
     /// nothing (the base system prompt is already the normal voice), so this

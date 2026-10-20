@@ -22,6 +22,7 @@
 		ADA9CA0122E8E709F24C336F /* BackendAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB16E523B60132C31CF58A89 /* BackendAIService.swift */; };
 		6A35FAF46D851527BC34EE06 /* ContextManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F8DE449B476F7326932D50 /* ContextManager.swift */; };
 		27D2CA3ECE263AD4EB1203CF /* ConversationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F08D960AF14A52BF07D7CAB /* ConversationManager.swift */; };
+		B71DC0DE0000000000000002 /* RomanticPersona.swift in Sources */ = {isa = PBXBuildFile; fileRef = B71DC0DE0000000000000001 /* RomanticPersona.swift */; };
 		24433C154AB3AE55459147AE /* FastCommandRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 979807E57D1A9282DDE5B312 /* FastCommandRouter.swift */; };
 		97CBAD736BD9F9762F83D2EB /* MockAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9292A3E9664162481D38203 /* MockAIService.swift */; };
 		6E2E620AA61B2D980E8FB205 /* AppleSpeechTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA11087E20BD82BB2CD9E627 /* AppleSpeechTranscriber.swift */; };
@@ -99,6 +100,7 @@
 		B10C0FFEE1234567890ABCDF /* ContactService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10C0FFEE1234567890ABCDE /* ContactService.swift */; };
 		A17E3C0DE1234567890ABCDF /* AskZyraxisIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17E3C0DE1234567890ABCDE /* AskZyraxisIntent.swift */; };
 		415CD76F61CD7005D4F3337C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5B15DB5AF2A709DD87F02198 /* Assets.xcassets */; };
+		B70DC0DE0000000000000002 /* RomanticPersona.txt in Resources */ = {isa = PBXBuildFile; fileRef = B70DC0DE0000000000000001 /* RomanticPersona.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -117,6 +119,7 @@
 		BB16E523B60132C31CF58A89 /* BackendAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackendAIService.swift; path = BackendAIService.swift; sourceTree = "<group>"; };
 		43F8DE449B476F7326932D50 /* ContextManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContextManager.swift; path = ContextManager.swift; sourceTree = "<group>"; };
 		6F08D960AF14A52BF07D7CAB /* ConversationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ConversationManager.swift; path = ConversationManager.swift; sourceTree = "<group>"; };
+		B71DC0DE0000000000000001 /* RomanticPersona.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RomanticPersona.swift; path = RomanticPersona.swift; sourceTree = "<group>"; };
 		979807E57D1A9282DDE5B312 /* FastCommandRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FastCommandRouter.swift; path = FastCommandRouter.swift; sourceTree = "<group>"; };
 		D9292A3E9664162481D38203 /* MockAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MockAIService.swift; path = MockAIService.swift; sourceTree = "<group>"; };
 		BA11087E20BD82BB2CD9E627 /* AppleSpeechTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppleSpeechTranscriber.swift; path = AppleSpeechTranscriber.swift; sourceTree = "<group>"; };
@@ -195,6 +198,7 @@
 		C9C9C9C9C9C9C9C9C9C9C9C7 /* WoLServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WoLServiceTests.swift; path = WoLServiceTests.swift; sourceTree = "<group>"; };
 		F2C5B33075AEB8DD4A529EF8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
 		5B15DB5AF2A709DD87F02198 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Assets.xcassets; sourceTree = "<group>"; };
+		B70DC0DE0000000000000001 /* RomanticPersona.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = RomanticPersona.txt; path = RomanticPersona.txt; sourceTree = "<group>"; };
 		FBBEF4C78CF48650F02E7541 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
 		C78C5B18D7576691B6C910C2 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		B80D04D542DD80243BB8EF23 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
@@ -309,6 +313,7 @@
 				BB16E523B60132C31CF58A89 /* BackendAIService.swift */,
 				43F8DE449B476F7326932D50 /* ContextManager.swift */,
 				6F08D960AF14A52BF07D7CAB /* ConversationManager.swift */,
+				B71DC0DE0000000000000001 /* RomanticPersona.swift */,
 				979807E57D1A9282DDE5B312 /* FastCommandRouter.swift */,
 				D9292A3E9664162481D38203 /* MockAIService.swift */,
 				D1EC7B001A2B3C4D5E6F7081 /* DirectProvider.swift */,
@@ -463,6 +468,7 @@
 			children = (
 				F2C5B33075AEB8DD4A529EF8 /* Info.plist */,
 				5B15DB5AF2A709DD87F02198 /* Assets.xcassets */,
+				B70DC0DE0000000000000001 /* RomanticPersona.txt */,
 			);
 			name = Resources;
 			path = Resources;
@@ -598,6 +604,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				415CD76F61CD7005D4F3337C /* Assets.xcassets in Resources */,
+				B70DC0DE0000000000000002 /* RomanticPersona.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -623,6 +630,7 @@
 				ADA9CA0122E8E709F24C336F /* BackendAIService.swift in Sources */,
 				6A35FAF46D851527BC34EE06 /* ContextManager.swift in Sources */,
 				27D2CA3ECE263AD4EB1203CF /* ConversationManager.swift in Sources */,
+				B71DC0DE0000000000000002 /* RomanticPersona.swift in Sources */,
 				24433C154AB3AE55459147AE /* FastCommandRouter.swift in Sources */,
 				97CBAD736BD9F9762F83D2EB /* MockAIService.swift in Sources */,
 				6E2E620AA61B2D980E8FB205 /* AppleSpeechTranscriber.swift in Sources */,

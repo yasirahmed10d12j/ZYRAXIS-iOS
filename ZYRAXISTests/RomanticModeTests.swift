@@ -216,4 +216,58 @@ final class RomanticModeTests: XCTestCase {
             XCTAssertTrue(AVSpeechService.isFemaleVoice(voice!))
         }
     }
+
+    // MARK: - Editable persona file
+
+    /// The persona lives in a text file so it can be edited without code.
+    /// Comments (`#`) and blank lines are scaffolding for the human editing
+    /// it, so they must never be forwarded to the model.
+    func testPersonaParserStripsCommentsAndBlankLines() {
+        let raw = """
+        # heading comment
+        romantic mode is ON
+
+        # another comment
+        jaan, babu
+
+        """
+        let parsed = RomanticPersona.parse(raw)
+        XCTAssertTrue(parsed.contains("romantic mode is ON"))
+        XCTAssertTrue(parsed.contains("jaan, babu"))
+        XCTAssertFalse(parsed.contains("#"), "comment markers must not reach the model")
+        XCTAssertFalse(parsed.contains("\n\n\n"), "blank lines must be collapsed away")
+    }
+
+    /// A file that is only comments would otherwise silently send the model an
+    /// empty persona; treat it as unusable rather than as "no persona".
+    func testPersonaParserRejectsCommentOnlyFile() {
+        XCTAssertEqual(RomanticPersona.parse("# just a comment\n\n# and another"), "")
+    }
+
+    /// Whatever the source, the text the model receives must satisfy every
+    /// assertion the persona promises — this is what guards a bad edit.
+    func testLoadedPersonaStillSatisfiesContract() {
+        let s = RomanticPersona.text
+        XCTAssertFalse(s.isEmpty)
+        for phrase in [
+            "romantic mode is ON", "girlfriend mode", "hinglish", "jaan",
+            "double meaning", "emoji", "never output an error",
+            "stay in character", "answer it",
+        ] {
+            XCTAssertTrue(
+                s.lowercased().contains(phrase),
+                "persona lost required phrase: \(phrase)"
+            )
+        }
+    }
+
+    /// The compiled-in fallback must remain a valid persona on its own, since
+    /// it is what ships if the resource is ever missing from the bundle.
+    func testFallbackPersonaIsValid() {
+        let s = ConversationManager.romanticSuffixFallback
+        XCTAssertTrue(s.contains("romantic mode is ON"))
+        XCTAssertTrue(s.lowercased().contains("hinglish"))
+        XCTAssertTrue(s.lowercased().contains("never crude"))
+        XCTAssertTrue(s.lowercased().contains("never possessive"))
+    }
 }
